@@ -267,11 +267,17 @@ async function extractEpubText(zipBytes: Uint8Array): Promise<string> {
         // Stored (no compression)
         content = decoder.decode(zipBytes.subarray(dataStart, dataStart + uncompSize));
       } else if (compMethod === 8) {
-        // Deflated - use DecompressionStream
+        // Deflated - wrap raw deflate with zlib header for DecompressionStream
         const compressed = zipBytes.subarray(dataStart, dataStart + compSize);
-        const ds = new DecompressionStream("raw");
+        // Prepend zlib header (0x78 0x01 = no compression/low) to raw deflate data
+        const zlibWrapped = new Uint8Array(compressed.length + 2);
+        zlibWrapped[0] = 0x78;
+        zlibWrapped[1] = 0x01;
+        zlibWrapped.set(compressed, 2);
+        const ds = new DecompressionStream("deflate");
         const writer = ds.writable.getWriter();
-        writer.write(compressed);
+        writer.write(zlibWrapped);
+
         writer.close();
         const reader = ds.readable.getReader();
         const chunks: Uint8Array[] = [];
