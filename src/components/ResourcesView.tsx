@@ -209,7 +209,18 @@ export function ResourcesView() {
                   </p>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleExtractRecipes(book.id, book.title)}
+                  disabled={extractingBookId === book.id}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {extractingBookId === book.id ? (
+                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Extracting…</>
+                  ) : (
+                    <><Sparkles className="w-3.5 h-3.5" /> Extract Recipes</>
+                  )}
+                </button>
                 <button
                   onClick={() => setViewingBook(book.id)}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
