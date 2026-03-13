@@ -87,26 +87,38 @@ async function processBook(book: any, jobId: string) {
 
     await sbUpdate("extraction_jobs", `id=eq.${jobId}`, { progress: 15, updated_at: new Date().toISOString() });
 
-    // Download file and convert to base64 data URL
+    // Download file
     const fileResp = await fetch(fileUrl);
     if (!fileResp.ok) throw new Error("Could not download book file");
     const fileBytes = new Uint8Array(await fileResp.arrayBuffer());
-    
+
     await sbUpdate("extraction_jobs", `id=eq.${jobId}`, { progress: 30, updated_at: new Date().toISOString() });
 
-    // Convert to base64 in chunks to avoid stack overflow
-    let base64 = "";
-    const chunkSize = 32768;
-    for (let i = 0; i < fileBytes.length; i += chunkSize) {
-      const chunk = fileBytes.subarray(i, i + chunkSize);
-      base64 += String.fromCharCode(...chunk);
+    let userContent: any[];
+
+    if (book.file_type === "epub") {
+      // EPUB: extract text from the ZIP (XHTML files inside)
+      const textContent = await extractEpubText(fileBytes);
+      await sbUpdate("extraction_jobs", `id=eq.${jobId}`, { progress: 40, updated_at: new Date().toISOString() });
+      userContent = [
+        { type: "text", text: `Here is the full text of the cookbook "${book.title}". Extract all recipes:\n\n${textContent}` },
+      ];
+    } else {
+      // PDF: send as base64 data URL
+      let base64 = "";
+      const chunkSize = 32768;
+      for (let i = 0; i < fileBytes.length; i += chunkSize) {
+        const chunk = fileBytes.subarray(i, i + chunkSize);
+        base64 += String.fromCharCode(...chunk);
+      }
+      base64 = btoa(base64);
+      const dataUrl = `data:application/pdf;base64,${base64}`;
+      await sbUpdate("extraction_jobs", `id=eq.${jobId}`, { progress: 40, updated_at: new Date().toISOString() });
+      userContent = [
+        { type: "image_url", image_url: { url: dataUrl } },
+        { type: "text", text: `Extract all recipes from: "${book.title}"` },
+      ];
     }
-    base64 = btoa(base64);
-
-    const mimeType = book.file_type === "epub" ? "application/epub+zip" : "application/pdf";
-    const dataUrl = `data:${mimeType};base64,${base64}`;
-
-    await sbUpdate("extraction_jobs", `id=eq.${jobId}`, { progress: 40, updated_at: new Date().toISOString() });
 
     const systemPrompt = `You are a recipe extraction assistant analyzing a cookbook. Extract ALL recipes.
 For each recipe extract: title, page_reference (e.g. "p. 42" or null), ingredients (one per line), instructions (one step per line).
@@ -122,13 +134,7 @@ Use the extract_recipes tool to return results.`;
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: [
-              { type: "image_url", image_url: { url: dataUrl } },
-              { type: "text", text: `Extract all recipes from: "${book.title}"` },
-            ],
-          },
+          { role: "user", content: userContent },
         ],
         tools: [{
           type: "function",
