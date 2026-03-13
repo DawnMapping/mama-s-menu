@@ -38,7 +38,6 @@ export const MEAL_SLOTS = [
 
 export const BOOK_SOURCES = [
   'All',
-  'CSIRO Low-Carb Diabetes Every Day',
   'CSIRO Low-Carb Every Day',
   'CSIRO Low-Carb Diet Easy 100',
   'CSIRO Gut Care Guide',
