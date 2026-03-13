@@ -14,7 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      locked_meals: {
+        Row: {
+          day: string
+          id: string
+          locked_at: string
+          notes: string | null
+          recipe_id: string
+          warnings_at_lock: string[] | null
+        }
+        Insert: {
+          day: string
+          id?: string
+          locked_at?: string
+          notes?: string | null
+          recipe_id: string
+          warnings_at_lock?: string[] | null
+        }
+        Update: {
+          day?: string
+          id?: string
+          locked_at?: string
+          notes?: string | null
+          recipe_id?: string
+          warnings_at_lock?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "locked_meals_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipes: {
+        Row: {
+          banned_ingredients_found: string[] | null
+          book_source: string | null
+          created_at: string
+          id: string
+          image_url: string | null
+          ingredients: string | null
+          instructions: string | null
+          page_reference: string | null
+          status: string
+          title: string
+          warnings: string[] | null
+        }
+        Insert: {
+          banned_ingredients_found?: string[] | null
+          book_source?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          ingredients?: string | null
+          instructions?: string | null
+          page_reference?: string | null
+          status?: string
+          title: string
+          warnings?: string[] | null
+        }
+        Update: {
+          banned_ingredients_found?: string[] | null
+          book_source?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          ingredients?: string | null
+          instructions?: string | null
+          page_reference?: string | null
+          status?: string
+          title?: string
+          warnings?: string[] | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
