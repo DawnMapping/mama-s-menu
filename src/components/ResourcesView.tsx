@@ -4,11 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { BookOpen, Upload, Download, Eye, Trash2, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
+import { Progress } from '@/components/ui/progress';
 
 export function ResourcesView() {
   const { data: books, isLoading } = useBooks();
   const [viewingBook, setViewingBook] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -24,10 +26,44 @@ export function ResourcesView() {
     }
 
     setUploading(true);
+    setUploadProgress(0);
+
     try {
       const filePath = `${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage.from('books').upload(filePath, file);
-      if (uploadError) throw uploadError;
+
+      // Use XMLHttpRequest for upload progress tracking
+      const { data: { publicUrl } } = supabase.storage.from('books').getPublicUrl('');
+      const bucketUrl = publicUrl.replace(/\/object\/public\/books\/$/, '');
+      
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/books/${filePath}`;
+        
+        xhr.upload.addEventListener('progress', (event) => {
+          if (event.lengthComputable) {
+            setUploadProgress(Math.round((event.loaded / event.total) * 90));
+          }
+        });
+        
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            setUploadProgress(90);
+            resolve();
+          } else {
+            reject(new Error(`Upload failed: ${xhr.statusText}`));
+          }
+        });
+        
+        xhr.addEventListener('error', () => reject(new Error('Upload failed')));
+        
+        xhr.open('POST', url);
+        xhr.setRequestHeader('Authorization', `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`);
+        xhr.setRequestHeader('apikey', import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+        xhr.setRequestHeader('x-upsert', 'false');
+        xhr.send(file);
+      });
+
+      setUploadProgress(95);
 
       // Derive a title from the filename
       const title = file.name.replace(/\.(pdf|epub)$/i, '').replace(/[-_]/g, ' ');
@@ -40,12 +76,14 @@ export function ResourcesView() {
       });
       if (dbError) throw dbError;
 
+      setUploadProgress(100);
       toast({ title: 'Book uploaded', description: `"${title}" is now available in Resources` });
       qc.invalidateQueries({ queryKey: ['books'] });
     } catch (err: any) {
       toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
     } finally {
       setUploading(false);
+      setUploadProgress(0);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -114,6 +152,15 @@ export function ResourcesView() {
           />
         </label>
       </div>
+
+      {uploading && (
+        <div className="space-y-1.5">
+          <Progress value={uploadProgress} className="h-2" />
+          <p className="text-xs text-muted-foreground text-center">
+            Uploading… {uploadProgress}%
+          </p>
+        </div>
+      )}
 
       {isLoading ? (
         <p className="text-muted-foreground text-center py-12">Loading resources...</p>
