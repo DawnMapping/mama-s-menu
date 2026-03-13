@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useBooks, getBookFileUrl } from '@/hooks/useBooks';
 import { supabase } from '@/integrations/supabase/client';
-import { BookOpen, Upload, Download, Eye, Trash2, FileText } from 'lucide-react';
+import { BookOpen, Upload, Download, Eye, Trash2, FileText, Sparkles, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { Progress } from '@/components/ui/progress';
@@ -12,8 +12,27 @@ export function ResourcesView() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [extractingBookId, setExtractingBookId] = useState<string | null>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
+
+  const handleExtractRecipes = async (bookId: string, bookTitle: string) => {
+    setExtractingBookId(bookId);
+    toast({ title: 'Extracting recipes…', description: `Sending "${bookTitle}" to AI — this may take a minute for large books.` });
+    try {
+      const { data, error } = await supabase.functions.invoke('extract-recipes', {
+        body: { bookId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: 'Extraction complete!', description: data.message });
+      qc.invalidateQueries({ queryKey: ['recipes'] });
+    } catch (err: any) {
+      toast({ title: 'Extraction failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setExtractingBookId(null);
+    }
+  };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -190,7 +209,18 @@ export function ResourcesView() {
                   </p>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleExtractRecipes(book.id, book.title)}
+                  disabled={extractingBookId === book.id}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {extractingBookId === book.id ? (
+                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Extracting…</>
+                  ) : (
+                    <><Sparkles className="w-3.5 h-3.5" /> Extract Recipes</>
+                  )}
+                </button>
                 <button
                   onClick={() => setViewingBook(book.id)}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
