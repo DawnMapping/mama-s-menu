@@ -39,5 +39,14 @@ export const MEAL_SLOTS = [
 export const BOOK_SOURCES = [
   'All',
   'CSIRO Low-Carb Diabetes Every Day',
-  'CSIRO Gut Guide',
+  'Csiro Low-carb Every Day',
+  'The CSIRO Gut Care Guide',
+  'The CSIRO Healthy Gut Diet',
+  'The CSIRO healthy heart program',
+  'The CSIRO Low-carb Diet Easy 100',
+  'The CSIRO total wellbeing diet',
+  'The CSIRO total wellbeing diet. Book 2',
+  "The CSIRO Women's Health & Nutrition Guide",
+  'The CSIRO and Baker IDI diabetes diet and lifestyle plan',
+  'Fit With Healthy Fascia',
 ] as const;
