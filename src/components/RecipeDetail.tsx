@@ -7,28 +7,30 @@ import { useLockMeal } from '@/hooks/useLockedMeals';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import recipeSalmon from '@/assets/recipe-salmon.jpg';
-import recipeStirfry from '@/assets/recipe-stirfry.jpg';
-import recipeSoup from '@/assets/recipe-soup.jpg';
-import recipeSalad from '@/assets/recipe-salad.jpg';
-
-const fallbackImages: Record<string, string> = {
-  '/recipe-salmon.jpg': recipeSalmon,
-  '/recipe-stirfry.jpg': recipeStirfry,
-  '/recipe-soup.jpg': recipeSoup,
-  '/recipe-salad.jpg': recipeSalad,
-};
-
-function getImageSrc(url: string | null) {
-  if (!url) return recipeSalmon;
-  return fallbackImages[url] || url;
-}
+import { UtensilsCrossed } from 'lucide-react';
 
 interface RecipeDetailProps {
   recipe: Recipe;
   open: boolean;
   onClose: () => void;
   preselectedDay?: string;
+}
+
+/** Split newline-separated text into list items */
+function TextList({ text, ordered }: { text: string; ordered?: boolean }) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length <= 1) {
+    return <p className="text-sm text-foreground/80 leading-relaxed">{text}</p>;
+  }
+
+  const Tag = ordered ? 'ol' : 'ul';
+  return (
+    <Tag className={`text-sm text-foreground/80 leading-relaxed space-y-1 pl-5 ${ordered ? 'list-decimal' : 'list-disc'}`}>
+      {lines.map((line, i) => (
+        <li key={i}>{line.replace(/^\d+\.\s*/, '')}</li>
+      ))}
+    </Tag>
+  );
 }
 
 export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDetailProps) {
@@ -50,13 +52,19 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg p-0 overflow-hidden bg-card border-border/50 max-h-[90vh] overflow-y-auto">
-        <div className="aspect-[16/10] overflow-hidden">
-          <img
-            src={getImageSrc(recipe.image_url)}
-            alt={recipe.title}
-            className="w-full h-full object-cover"
-          />
-        </div>
+        {recipe.image_url ? (
+          <div className="aspect-[16/10] overflow-hidden">
+            <img
+              src={recipe.image_url}
+              alt={recipe.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        ) : (
+          <div className="h-24 bg-secondary/50 flex items-center justify-center">
+            <UtensilsCrossed className="w-10 h-10 text-muted-foreground/30" />
+          </div>
+        )}
         <div className="p-6 space-y-4">
           {warnings.length > 0 && <WarningBox warnings={warnings} animate />}
           <StatusBar status={recipe.status} />
@@ -73,14 +81,14 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
           )}
           {recipe.ingredients && (
             <div>
-              <h4 className="font-serif text-base font-semibold text-foreground mb-1">Ingredients</h4>
-              <p className="text-sm text-foreground/80 leading-relaxed">{recipe.ingredients}</p>
+              <h4 className="font-serif text-base font-semibold text-foreground mb-2">Ingredients</h4>
+              <TextList text={recipe.ingredients} />
             </div>
           )}
           {recipe.instructions && (
             <div>
-              <h4 className="font-serif text-base font-semibold text-foreground mb-1">Method</h4>
-              <p className="text-sm text-foreground/80 leading-relaxed">{recipe.instructions}</p>
+              <h4 className="font-serif text-base font-semibold text-foreground mb-2">Method</h4>
+              <TextList text={recipe.instructions} ordered />
             </div>
           )}
 
