@@ -12,8 +12,27 @@ export function ResourcesView() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [extractingBookId, setExtractingBookId] = useState<string | null>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
+
+  const handleExtractRecipes = async (bookId: string, bookTitle: string) => {
+    setExtractingBookId(bookId);
+    toast({ title: 'Extracting recipes…', description: `Sending "${bookTitle}" to AI — this may take a minute for large books.` });
+    try {
+      const { data, error } = await supabase.functions.invoke('extract-recipes', {
+        body: { bookId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: 'Extraction complete!', description: data.message });
+      qc.invalidateQueries({ queryKey: ['recipes'] });
+    } catch (err: any) {
+      toast({ title: 'Extraction failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setExtractingBookId(null);
+    }
+  };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
