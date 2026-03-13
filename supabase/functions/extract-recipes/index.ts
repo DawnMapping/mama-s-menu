@@ -1,11 +1,47 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+// Lightweight Supabase REST helpers (no SDK import)
+function sbUrl() { return Deno.env.get("SUPABASE_URL")!; }
+function sbHeaders() {
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  return {
+    apikey: key,
+    Authorization: `Bearer ${key}`,
+    "Content-Type": "application/json",
+    Prefer: "return=representation",
+  };
+}
+
+async function sbSelect(table: string, query: string) {
+  const res = await fetch(`${sbUrl()}/rest/v1/${table}?${query}`, { headers: sbHeaders() });
+  const body = await res.json();
+  return body;
+}
+
+async function sbInsert(table: string, rows: any) {
+  const res = await fetch(`${sbUrl()}/rest/v1/${table}`, {
+    method: "POST",
+    headers: sbHeaders(),
+    body: JSON.stringify(rows),
+  });
+  const body = await res.json();
+  return body;
+}
+
+async function sbUpdate(table: string, query: string, data: any) {
+  const res = await fetch(`${sbUrl()}/rest/v1/${table}?${query}`, {
+    method: "PATCH",
+    headers: { ...sbHeaders(), Prefer: "return=minimal" },
+    body: JSON.stringify(data),
+  });
+  await res.text(); // consume body
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS")
@@ -15,75 +51,46 @@ serve(async (req) => {
     const { bookId } = await req.json();
     if (!bookId) throw new Error("bookId is required");
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    // 1. Get book
+    const books = await sbSelect("books", `id=eq.${bookId}&select=*`);
+    const book = books?.[0];
+    if (!book) throw new Error("Book not found");
 
-    const supabase = createClient(supabaseUrl, serviceKey);
+    // 2. Create job
+    const jobs = await sbInsert("extraction_jobs", { book_id: bookId, status: "processing", progress: 10 });
+    const job = jobs?.[0];
+    if (!job) throw new Error("Could not create job");
 
-    // 1. Get book metadata
-    const { data: book, error: bookErr } = await supabase
-      .from("books")
-      .select("*")
-      .eq("id", bookId)
-      .single();
-    if (bookErr || !book) throw new Error("Book not found");
+    // 3. Background processing
+    // @ts-ignore
+    EdgeRuntime.waitUntil(processBook(book, job.id));
 
-    // 2. Create a job record
-    const { data: job, error: jobErr } = await supabase
-      .from("extraction_jobs")
-      .insert({ book_id: bookId, status: "processing", progress: 10 })
-      .select()
-      .single();
-    if (jobErr || !job) throw new Error("Could not create job: " + jobErr?.message);
-
-    // 3. Kick off background processing
-    // @ts-ignore - EdgeRuntime.waitUntil is available in Supabase Edge Functions
-    EdgeRuntime.waitUntil(processBook(supabase, book, job.id));
-
-    // 4. Return immediately with the job ID
     return new Response(
       JSON.stringify({ jobId: job.id, message: "Extraction started" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (e) {
+  } catch (e: any) {
     console.error("extract-recipes error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      JSON.stringify({ error: e.message || "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
 
-async function processBook(supabase: any, book: any, jobId: string) {
+async function processBook(book: any, jobId: string) {
   const lovableKey = Deno.env.get("LOVABLE_API_KEY")!;
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
   try {
-    // Get the public URL for the file
-    const { data: urlData } = supabase.storage.from("books").getPublicUrl(book.file_path);
-    const fileUrl = urlData.publicUrl;
+    const fileUrl = `${supabaseUrl}/storage/v1/object/public/books/${book.file_path}`;
 
-    await supabase
-      .from("extraction_jobs")
-      .update({ progress: 20, updated_at: new Date().toISOString() })
-      .eq("id", jobId);
+    await sbUpdate("extraction_jobs", `id=eq.${jobId}`, { progress: 25, updated_at: new Date().toISOString() });
 
-    const systemPrompt = `You are a recipe extraction assistant. You will be given a cookbook. Extract ALL recipes you can find.
+    const systemPrompt = `You are a recipe extraction assistant analyzing a cookbook. Extract ALL recipes.
+For each recipe extract: title, page_reference (e.g. "p. 42" or null), ingredients (one per line), instructions (one step per line).
+Use the extract_recipes tool to return results.`;
 
-For each recipe, extract:
-- title: the recipe name
-- page_reference: the page number if visible (e.g. "p. 42"), or null
-- ingredients: the full ingredients list as plain text, each ingredient on its own line
-- instructions: the full method/instructions as plain text, each step on its own line
-
-Return your results using the extract_recipes tool. Extract EVERY recipe you can find.`;
-
-    await supabase
-      .from("extraction_jobs")
-      .update({ progress: 30, updated_at: new Date().toISOString() })
-      .eq("id", jobId);
-
-    // Send the file URL to the AI - no need to download into memory
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -97,75 +104,59 @@ Return your results using the extract_recipes tool. Extract EVERY recipe you can
           {
             role: "user",
             content: [
-              {
-                type: "image_url",
-                image_url: { url: fileUrl },
-              },
-              {
-                type: "text",
-                text: `Extract all recipes from this cookbook: "${book.title}". Find every recipe with its ingredients, instructions, and page numbers.`,
-              },
+              { type: "image_url", image_url: { url: fileUrl } },
+              { type: "text", text: `Extract all recipes from: "${book.title}"` },
             ],
           },
         ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "extract_recipes",
-              description: "Submit all extracted recipes from the cookbook",
-              parameters: {
-                type: "object",
-                properties: {
-                  recipes: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        title: { type: "string" },
-                        page_reference: { type: "string", nullable: true },
-                        ingredients: { type: "string" },
-                        instructions: { type: "string" },
-                      },
-                      required: ["title", "ingredients", "instructions"],
-                      additionalProperties: false,
+        tools: [{
+          type: "function",
+          function: {
+            name: "extract_recipes",
+            description: "Submit extracted recipes",
+            parameters: {
+              type: "object",
+              properties: {
+                recipes: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      title: { type: "string" },
+                      page_reference: { type: "string", nullable: true },
+                      ingredients: { type: "string" },
+                      instructions: { type: "string" },
                     },
+                    required: ["title", "ingredients", "instructions"],
+                    additionalProperties: false,
                   },
                 },
-                required: ["recipes"],
-                additionalProperties: false,
               },
+              required: ["recipes"],
+              additionalProperties: false,
             },
           },
-        ],
+        }],
         tool_choice: { type: "function", function: { name: "extract_recipes" } },
       }),
     });
 
-    await supabase
-      .from("extraction_jobs")
-      .update({ progress: 70, updated_at: new Date().toISOString() })
-      .eq("id", jobId);
+    await sbUpdate("extraction_jobs", `id=eq.${jobId}`, { progress: 70, updated_at: new Date().toISOString() });
 
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
       console.error("AI error:", aiResponse.status, errText);
-      throw new Error(`AI extraction failed (${aiResponse.status}): ${errText}`);
+      throw new Error(`AI failed (${aiResponse.status})`);
     }
 
     const aiData = await aiResponse.json();
-    console.log("AI response received, parsing tool call...");
-
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) throw new Error("AI did not return structured recipes");
 
     const extracted = JSON.parse(toolCall.function.arguments);
     const recipes = extracted.recipes || [];
 
-    await supabase
-      .from("extraction_jobs")
-      .update({ progress: 85, updated_at: new Date().toISOString() })
-      .eq("id", jobId);
+    await sbUpdate("extraction_jobs", `id=eq.${jobId}`, { progress: 85, updated_at: new Date().toISOString() });
 
     if (recipes.length > 0) {
       const toInsert = recipes.map((r: any) => ({
@@ -179,30 +170,23 @@ Return your results using the extract_recipes tool. Extract EVERY recipe you can
         banned_ingredients_found: [],
       }));
 
-      const { error: insertErr } = await supabase.from("recipes").insert(toInsert);
-      if (insertErr) throw new Error("Failed to save recipes: " + insertErr.message);
+      await sbInsert("recipes", toInsert);
     }
 
-    await supabase
-      .from("extraction_jobs")
-      .update({
-        status: "completed",
-        progress: 100,
-        result_count: recipes.length,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", jobId);
+    await sbUpdate("extraction_jobs", `id=eq.${jobId}`, {
+      status: "completed",
+      progress: 100,
+      result_count: recipes.length,
+      updated_at: new Date().toISOString(),
+    });
 
-    console.log(`Extraction complete: ${recipes.length} recipes from "${book.title}"`);
-  } catch (e) {
+    console.log(`Done: ${recipes.length} recipes from "${book.title}"`);
+  } catch (e: any) {
     console.error("processBook error:", e);
-    await supabase
-      .from("extraction_jobs")
-      .update({
-        status: "failed",
-        error: e instanceof Error ? e.message : "Unknown error",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", jobId);
+    await sbUpdate("extraction_jobs", `id=eq.${jobId}`, {
+      status: "failed",
+      error: e.message || "Unknown error",
+      updated_at: new Date().toISOString(),
+    });
   }
 }
