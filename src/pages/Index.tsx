@@ -1,12 +1,25 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from 'react';
+import { ViewToggle } from '@/components/ViewToggle';
+import { MumView } from '@/components/MumView';
+import { CookView } from '@/components/CookView';
+import type { ViewMode } from '@/lib/types';
 
 const Index = () => {
+  const [mode, setMode] = useState<ViewMode>('mum');
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border/50">
+        <div className="container flex items-center justify-between py-4">
+          <h1 className="font-serif text-2xl text-foreground">
+            Meal Planner
+          </h1>
+          <ViewToggle mode={mode} onChange={setMode} />
+        </div>
+      </header>
+      <main className="container py-6">
+        {mode === 'mum' ? <MumView /> : <CookView />}
+      </main>
     </div>
   );
 };
