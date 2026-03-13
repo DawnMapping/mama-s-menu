@@ -22,7 +22,7 @@ export interface LockedMeal {
   recipes?: Recipe;
 }
 
-export type ViewMode = 'mum' | 'cook';
+export type ViewMode = 'planner' | 'cook' | 'shopping' | 'resources';
 
 export const MEAL_SLOTS = [
   'Monday dinner',

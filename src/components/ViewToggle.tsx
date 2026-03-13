@@ -1,9 +1,10 @@
-import type { ViewMode } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
+type ToggleMode = 'mum' | 'cook';
+
 interface ViewToggleProps {
-  mode: ViewMode;
-  onChange: (mode: ViewMode) => void;
+  mode: ToggleMode;
+  onChange: (mode: ToggleMode) => void;
 }
 
 export function ViewToggle({ mode, onChange }: ViewToggleProps) {
