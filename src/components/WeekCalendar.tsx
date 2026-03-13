@@ -12,8 +12,7 @@ export function WeekCalendar({ lockedMeals, onSlotClick, onLockedClick }: WeekCa
   const mealsByDay = new Map(lockedMeals.map((m) => [m.day, m]));
 
   return (
-    <div className="space-y-3">
-      <h2 className="font-serif text-xl text-foreground">This Week</h2>
+    <div className="space-y-2">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
         {MEAL_SLOTS.map((slot) => {
           const meal = mealsByDay.get(slot);
