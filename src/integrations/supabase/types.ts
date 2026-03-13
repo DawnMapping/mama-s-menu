@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      books: {
+        Row: {
+          book_source: string
+          file_path: string
+          file_type: string
+          id: string
+          title: string
+          uploaded_at: string
+        }
+        Insert: {
+          book_source: string
+          file_path: string
+          file_type?: string
+          id?: string
+          title: string
+          uploaded_at?: string
+        }
+        Update: {
+          book_source?: string
+          file_path?: string
+          file_type?: string
+          id?: string
+          title?: string
+          uploaded_at?: string
+        }
+        Relationships: []
+      }
       locked_meals: {
         Row: {
           day: string
@@ -90,6 +117,41 @@ export type Database = {
           warnings?: string[] | null
         }
         Relationships: []
+      }
+      shopping_list_items: {
+        Row: {
+          checked: boolean
+          created_at: string
+          id: string
+          ingredient: string
+          meal_day: string | null
+          recipe_id: string | null
+        }
+        Insert: {
+          checked?: boolean
+          created_at?: string
+          id?: string
+          ingredient: string
+          meal_day?: string | null
+          recipe_id?: string | null
+        }
+        Update: {
+          checked?: boolean
+          created_at?: string
+          id?: string
+          ingredient?: string
+          meal_day?: string | null
+          recipe_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopping_list_items_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
