@@ -83,7 +83,7 @@ async function processBook(book: any, jobId: string) {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
   try {
-    const fileUrl = `${supabaseUrl}/storage/v1/object/public/books/${book.file_path}`;
+    const fileUrl = `${supabaseUrl}/storage/v1/object/public/books/${encodeURIComponent(book.file_path)}`;
 
     await sbUpdate("extraction_jobs", `id=eq.${jobId}`, { progress: 25, updated_at: new Date().toISOString() });
 
