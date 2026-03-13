@@ -17,7 +17,6 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const lovableKey = Deno.env.get("LOVABLE_API_KEY")!;
 
     const supabase = createClient(supabaseUrl, serviceKey);
 
@@ -29,31 +28,62 @@ serve(async (req) => {
       .single();
     if (bookErr || !book) throw new Error("Book not found");
 
-    // 2. Download the file from storage
-    const { data: fileData, error: dlErr } = await supabase.storage
-      .from("books")
-      .download(book.file_path);
-    if (dlErr || !fileData) throw new Error("Could not download book file: " + dlErr?.message);
+    // 2. Create a job record
+    const { data: job, error: jobErr } = await supabase
+      .from("extraction_jobs")
+      .insert({ book_id: bookId, status: "processing", progress: 10 })
+      .select()
+      .single();
+    if (jobErr || !job) throw new Error("Could not create job: " + jobErr?.message);
 
-    const arrayBuffer = await fileData.arrayBuffer();
-    const base64 = btoa(
-      new Uint8Array(arrayBuffer).reduce((s, b) => s + String.fromCharCode(b), "")
+    // 3. Kick off background processing
+    // @ts-ignore - EdgeRuntime.waitUntil is available in Supabase Edge Functions
+    EdgeRuntime.waitUntil(processBook(supabase, book, job.id));
+
+    // 4. Return immediately with the job ID
+    return new Response(
+      JSON.stringify({ jobId: job.id, message: "Extraction started" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+  } catch (e) {
+    console.error("extract-recipes error:", e);
+    return new Response(
+      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
 
-    const mimeType = book.file_type === "epub" ? "application/epub+zip" : "application/pdf";
+async function processBook(supabase: any, book: any, jobId: string) {
+  const lovableKey = Deno.env.get("LOVABLE_API_KEY")!;
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
-    // 3. Send to AI for extraction
-    const systemPrompt = `You are a recipe extraction assistant. You will be given a cookbook file. Extract ALL recipes you can find.
+  try {
+    // Get the public URL for the file
+    const { data: urlData } = supabase.storage.from("books").getPublicUrl(book.file_path);
+    const fileUrl = urlData.publicUrl;
+
+    await supabase
+      .from("extraction_jobs")
+      .update({ progress: 20, updated_at: new Date().toISOString() })
+      .eq("id", jobId);
+
+    const systemPrompt = `You are a recipe extraction assistant. You will be given a cookbook. Extract ALL recipes you can find.
 
 For each recipe, extract:
 - title: the recipe name
 - page_reference: the page number if visible (e.g. "p. 42"), or null
 - ingredients: the full ingredients list as plain text, each ingredient on its own line
 - instructions: the full method/instructions as plain text, each step on its own line
-- image_description: a brief description of the recipe photo if one exists, or null
 
-Return your results using the extract_recipes tool.`;
+Return your results using the extract_recipes tool. Extract EVERY recipe you can find.`;
 
+    await supabase
+      .from("extraction_jobs")
+      .update({ progress: 30, updated_at: new Date().toISOString() })
+      .eq("id", jobId);
+
+    // Send the file URL to the AI - no need to download into memory
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -68,16 +98,12 @@ Return your results using the extract_recipes tool.`;
             role: "user",
             content: [
               {
-                type: "file",
-                file: {
-                  filename: book.file_path.split("/").pop() || "book",
-                  data: base64,
-                  mime_type: mimeType,
-                },
+                type: "image_url",
+                image_url: { url: fileUrl },
               },
               {
                 type: "text",
-                text: `Extract all recipes from this cookbook: "${book.title}". Find every recipe with its ingredients and instructions.`,
+                text: `Extract all recipes from this cookbook: "${book.title}". Find every recipe with its ingredients, instructions, and page numbers.`,
               },
             ],
           },
@@ -96,25 +122,10 @@ Return your results using the extract_recipes tool.`;
                     items: {
                       type: "object",
                       properties: {
-                        title: { type: "string", description: "Recipe title" },
-                        page_reference: {
-                          type: "string",
-                          description: "Page number reference like 'p. 42'",
-                          nullable: true,
-                        },
-                        ingredients: {
-                          type: "string",
-                          description: "Full ingredients list, one per line",
-                        },
-                        instructions: {
-                          type: "string",
-                          description: "Full method/instructions, one step per line",
-                        },
-                        image_description: {
-                          type: "string",
-                          description: "Brief description of the recipe photo if present",
-                          nullable: true,
-                        },
+                        title: { type: "string" },
+                        page_reference: { type: "string", nullable: true },
+                        ingredients: { type: "string" },
+                        instructions: { type: "string" },
                       },
                       required: ["title", "ingredients", "instructions"],
                       additionalProperties: false,
@@ -131,65 +142,67 @@ Return your results using the extract_recipes tool.`;
       }),
     });
 
+    await supabase
+      .from("extraction_jobs")
+      .update({ progress: 70, updated_at: new Date().toISOString() })
+      .eq("id", jobId);
+
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
       console.error("AI error:", aiResponse.status, errText);
-      if (aiResponse.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limited, please try again in a minute." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please top up in Settings." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      throw new Error("AI extraction failed: " + errText);
+      throw new Error(`AI extraction failed (${aiResponse.status}): ${errText}`);
     }
 
     const aiData = await aiResponse.json();
-    console.log("AI response:", JSON.stringify(aiData).slice(0, 500));
+    console.log("AI response received, parsing tool call...");
 
-    // Parse tool call result
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) throw new Error("AI did not return structured recipes");
 
     const extracted = JSON.parse(toolCall.function.arguments);
     const recipes = extracted.recipes || [];
 
-    if (recipes.length === 0) {
-      return new Response(JSON.stringify({ message: "No recipes found in this book.", count: 0 }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    await supabase
+      .from("extraction_jobs")
+      .update({ progress: 85, updated_at: new Date().toISOString() })
+      .eq("id", jobId);
+
+    if (recipes.length > 0) {
+      const toInsert = recipes.map((r: any) => ({
+        title: r.title,
+        book_source: book.title,
+        page_reference: r.page_reference || null,
+        ingredients: r.ingredients || null,
+        instructions: r.instructions || null,
+        status: "green",
+        warnings: [],
+        banned_ingredients_found: [],
+      }));
+
+      const { error: insertErr } = await supabase.from("recipes").insert(toInsert);
+      if (insertErr) throw new Error("Failed to save recipes: " + insertErr.message);
     }
 
-    // 4. Map book title to a matching BOOK_SOURCES entry or use the book title
-    const bookSourceName = book.title;
+    await supabase
+      .from("extraction_jobs")
+      .update({
+        status: "completed",
+        progress: 100,
+        result_count: recipes.length,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", jobId);
 
-    // 5. Insert recipes into the database
-    const toInsert = recipes.map((r: any) => ({
-      title: r.title,
-      book_source: bookSourceName,
-      page_reference: r.page_reference || null,
-      ingredients: r.ingredients || null,
-      instructions: r.instructions || null,
-      status: "green",
-      warnings: [],
-      banned_ingredients_found: [],
-    }));
-
-    const { error: insertErr } = await supabase.from("recipes").insert(toInsert);
-    if (insertErr) throw new Error("Failed to save recipes: " + insertErr.message);
-
-    return new Response(
-      JSON.stringify({ message: `Extracted ${recipes.length} recipes from "${book.title}"`, count: recipes.length }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    console.log(`Extraction complete: ${recipes.length} recipes from "${book.title}"`);
   } catch (e) {
-    console.error("extract-recipes error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    console.error("processBook error:", e);
+    await supabase
+      .from("extraction_jobs")
+      .update({
+        status: "failed",
+        error: e instanceof Error ? e.message : "Unknown error",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", jobId);
   }
-});
+}
