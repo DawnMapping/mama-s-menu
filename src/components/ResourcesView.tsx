@@ -153,6 +153,15 @@ export function ResourcesView() {
         </label>
       </div>
 
+      {uploading && (
+        <div className="space-y-1.5">
+          <Progress value={uploadProgress} className="h-2" />
+          <p className="text-xs text-muted-foreground text-center">
+            Uploading… {uploadProgress}%
+          </p>
+        </div>
+      )}
+
       {isLoading ? (
         <p className="text-muted-foreground text-center py-12">Loading resources...</p>
       ) : !books?.length ? (
