@@ -87,26 +87,38 @@ async function processBook(book: any, jobId: string) {
 
     await sbUpdate("extraction_jobs", `id=eq.${jobId}`, { progress: 15, updated_at: new Date().toISOString() });
 
-    // Download file and convert to base64 data URL
+    // Download file
     const fileResp = await fetch(fileUrl);
     if (!fileResp.ok) throw new Error("Could not download book file");
     const fileBytes = new Uint8Array(await fileResp.arrayBuffer());
-    
+
     await sbUpdate("extraction_jobs", `id=eq.${jobId}`, { progress: 30, updated_at: new Date().toISOString() });
 
-    // Convert to base64 in chunks to avoid stack overflow
-    let base64 = "";
-    const chunkSize = 32768;
-    for (let i = 0; i < fileBytes.length; i += chunkSize) {
-      const chunk = fileBytes.subarray(i, i + chunkSize);
-      base64 += String.fromCharCode(...chunk);
+    let userContent: any[];
+
+    if (book.file_type === "epub") {
+      // EPUB: extract text from the ZIP (XHTML files inside)
+      const textContent = await extractEpubText(fileBytes);
+      await sbUpdate("extraction_jobs", `id=eq.${jobId}`, { progress: 40, updated_at: new Date().toISOString() });
+      userContent = [
+        { type: "text", text: `Here is the full text of the cookbook "${book.title}". Extract all recipes:\n\n${textContent}` },
+      ];
+    } else {
+      // PDF: send as base64 data URL
+      let base64 = "";
+      const chunkSize = 32768;
+      for (let i = 0; i < fileBytes.length; i += chunkSize) {
+        const chunk = fileBytes.subarray(i, i + chunkSize);
+        base64 += String.fromCharCode(...chunk);
+      }
+      base64 = btoa(base64);
+      const dataUrl = `data:application/pdf;base64,${base64}`;
+      await sbUpdate("extraction_jobs", `id=eq.${jobId}`, { progress: 40, updated_at: new Date().toISOString() });
+      userContent = [
+        { type: "image_url", image_url: { url: dataUrl } },
+        { type: "text", text: `Extract all recipes from: "${book.title}"` },
+      ];
     }
-    base64 = btoa(base64);
-
-    const mimeType = book.file_type === "epub" ? "application/epub+zip" : "application/pdf";
-    const dataUrl = `data:${mimeType};base64,${base64}`;
-
-    await sbUpdate("extraction_jobs", `id=eq.${jobId}`, { progress: 40, updated_at: new Date().toISOString() });
 
     const systemPrompt = `You are a recipe extraction assistant analyzing a cookbook. Extract ALL recipes.
 For each recipe extract: title, page_reference (e.g. "p. 42" or null), ingredients (one per line), instructions (one step per line).
@@ -122,13 +134,7 @@ Use the extract_recipes tool to return results.`;
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: [
-              { type: "image_url", image_url: { url: dataUrl } },
-              { type: "text", text: `Extract all recipes from: "${book.title}"` },
-            ],
-          },
+          { role: "user", content: userContent },
         ],
         tools: [{
           type: "function",
@@ -210,4 +216,110 @@ Use the extract_recipes tool to return results.`;
       updated_at: new Date().toISOString(),
     });
   }
+}
+
+// Simple EPUB text extractor - EPUBs are ZIP files containing XHTML
+async function extractEpubText(zipBytes: Uint8Array): Promise<string> {
+  // Parse ZIP central directory to find XHTML/HTML files
+  const textParts: string[] = [];
+  const decoder = new TextDecoder();
+
+  // Find end of central directory record
+  let eocdPos = -1;
+  for (let i = zipBytes.length - 22; i >= 0; i--) {
+    if (zipBytes[i] === 0x50 && zipBytes[i+1] === 0x4b && zipBytes[i+2] === 0x05 && zipBytes[i+3] === 0x06) {
+      eocdPos = i;
+      break;
+    }
+  }
+  if (eocdPos === -1) throw new Error("Not a valid ZIP/EPUB file");
+
+  const view = new DataView(zipBytes.buffer);
+  const cdOffset = view.getUint32(eocdPos + 16, true);
+  const cdEntries = view.getUint16(eocdPos + 10, true);
+
+  let pos = cdOffset;
+  for (let e = 0; e < cdEntries; e++) {
+    if (pos + 46 > zipBytes.length) break;
+    const sig = view.getUint32(pos, true);
+    if (sig !== 0x02014b50) break;
+
+    const compMethod = view.getUint16(pos + 10, true);
+    const compSize = view.getUint32(pos + 20, true);
+    const uncompSize = view.getUint32(pos + 24, true);
+    const nameLen = view.getUint16(pos + 28, true);
+    const extraLen = view.getUint16(pos + 30, true);
+    const commentLen = view.getUint16(pos + 32, true);
+    const localHeaderOffset = view.getUint32(pos + 42, true);
+
+    const fileName = decoder.decode(zipBytes.subarray(pos + 46, pos + 46 + nameLen));
+    const nextEntry = pos + 46 + nameLen + extraLen + commentLen;
+
+    // Only process XHTML/HTML files (where recipe content lives)
+    if (/\.(xhtml|html|htm)$/i.test(fileName) && !fileName.includes("toc") && !fileName.includes("nav")) {
+      // Read local file header to find data start
+      const lfhExtra = view.getUint16(localHeaderOffset + 28, true);
+      const lfhName = view.getUint16(localHeaderOffset + 26, true);
+      const dataStart = localHeaderOffset + 30 + lfhName + lfhExtra;
+
+      let content: string;
+      if (compMethod === 0) {
+        // Stored (no compression)
+        content = decoder.decode(zipBytes.subarray(dataStart, dataStart + uncompSize));
+      } else if (compMethod === 8) {
+        // Deflated - wrap raw deflate with zlib header for DecompressionStream
+        const compressed = zipBytes.subarray(dataStart, dataStart + compSize);
+        // Prepend zlib header (0x78 0x01 = no compression/low) to raw deflate data
+        const zlibWrapped = new Uint8Array(compressed.length + 2);
+        zlibWrapped[0] = 0x78;
+        zlibWrapped[1] = 0x01;
+        zlibWrapped.set(compressed, 2);
+        const ds = new DecompressionStream("deflate");
+        const writer = ds.writable.getWriter();
+        writer.write(zlibWrapped);
+
+        writer.close();
+        const reader = ds.readable.getReader();
+        const chunks: Uint8Array[] = [];
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+        }
+        const total = chunks.reduce((s, c) => s + c.length, 0);
+        const merged = new Uint8Array(total);
+        let offset = 0;
+        for (const c of chunks) { merged.set(c, offset); offset += c.length; }
+        content = decoder.decode(merged);
+      } else {
+        pos = nextEntry;
+        continue;
+      }
+
+      // Strip HTML tags to get plain text
+      const text = content
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/&nbsp;/g, " ")
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&#\d+;/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (text.length > 50) {
+        textParts.push(text);
+      }
+    }
+    pos = nextEntry;
+  }
+
+  // Truncate to ~100k chars to stay within AI context limits
+  let combined = textParts.join("\n\n---\n\n");
+  if (combined.length > 100000) {
+    combined = combined.slice(0, 100000) + "\n\n[TRUNCATED]";
+  }
+  return combined;
 }
