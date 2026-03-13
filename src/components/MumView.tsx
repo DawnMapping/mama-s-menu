@@ -4,10 +4,11 @@ import { useLockedMeals } from '@/hooks/useLockedMeals';
 import { RecipeCard } from './RecipeCard';
 import { RecipeDetail } from './RecipeDetail';
 import { WeekCalendar } from './WeekCalendar';
+import { BookBrowser } from './BookBrowser';
 import { BOOK_SOURCES } from '@/lib/types';
 import type { Recipe, LockedMeal } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, BookOpen } from 'lucide-react';
 
 export function MumView() {
   const { data: recipes, isLoading } = useRecipes();
@@ -17,6 +18,7 @@ export function MumView() {
   const [preselectedDay, setPreselectedDay] = useState<string | undefined>();
   const [searchQuery, setSearchQuery] = useState('');
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [browsingBook, setBrowsingBook] = useState<string | null>(null);
 
   const lockedCount = lockedMeals?.length || 0;
 
@@ -48,6 +50,41 @@ export function MumView() {
       setSelectedRecipe(meal.recipes);
     }
   };
+
+  const handleBookClick = (source: string) => {
+    if (source === 'All') {
+      setActiveFilter('All');
+      setBrowsingBook(null);
+    } else {
+      setBrowsingBook(source);
+    }
+  };
+
+  // If browsing a book, show the book browser
+  if (browsingBook) {
+    return (
+      <>
+        <BookBrowser
+          bookSource={browsingBook}
+          recipes={recipes || []}
+          onBack={() => setBrowsingBook(null)}
+          onSelectRecipe={(r) => setSelectedRecipe(r)}
+          preselectedDay={preselectedDay}
+        />
+        {selectedRecipe && (
+          <RecipeDetail
+            recipe={selectedRecipe}
+            open={!!selectedRecipe}
+            onClose={() => {
+              setSelectedRecipe(null);
+              setPreselectedDay(undefined);
+            }}
+            preselectedDay={preselectedDay}
+          />
+        )}
+      </>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -110,41 +147,68 @@ export function MumView() {
         />
       </div>
 
-      {/* Book Filter */}
-      <div className="flex gap-2 flex-wrap">
-        {BOOK_SOURCES.map((source) => (
-          <button
-            key={source}
-            onClick={() => setActiveFilter(source)}
-            className={cn(
-              'px-3 py-1.5 text-xs rounded-full border transition-all duration-200',
-              activeFilter === source
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-card text-muted-foreground border-border hover:border-primary/50'
-            )}
-          >
-            {source === 'All' ? 'All Books' : source.replace('The CSIRO ', '').replace('CSIRO ', '')}
-          </button>
-        ))}
+      {/* Book Shelf */}
+      <div className="space-y-2">
+        <h3 className="font-serif text-base text-foreground">Browse by Book</h3>
+        <div className="flex gap-2 flex-wrap">
+          {BOOK_SOURCES.filter(s => s !== 'All').map((source) => {
+            const count = recipes?.filter(r => r.book_source === source).length || 0;
+            return (
+              <button
+                key={source}
+                onClick={() => handleBookClick(source)}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-sm transition-all duration-200 text-left"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-gold shrink-0" />
+                <span className="text-foreground">
+                  {source.replace('CSIRO ', '')}
+                </span>
+                {count > 0 && (
+                  <span className="text-muted-foreground">({count})</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Recipe Grid */}
-      {isLoading ? (
-        <p className="text-muted-foreground text-center py-12">Loading recipes...</p>
-      ) : filtered.length === 0 ? (
-        <p className="text-muted-foreground text-center py-12">
-          {searchQuery ? 'No recipes match your search' : 'No recipes in this book yet'}
-        </p>
+      {/* Search results or All recipes */}
+      {searchQuery.trim() ? (
+        <>
+          <h3 className="font-serif text-base text-foreground">
+            Results for "{searchQuery}"
+          </h3>
+          {filtered.length === 0 ? (
+            <p className="text-muted-foreground text-center py-12">No recipes match your search</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filtered.map((recipe) => (
+                <RecipeCard
+                  key={recipe.id}
+                  recipe={recipe}
+                  onClick={() => setSelectedRecipe(recipe)}
+                />
+              ))}
+            </div>
+          )}
+        </>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((recipe) => (
-            <RecipeCard
-              key={recipe.id}
-              recipe={recipe}
-              onClick={() => setSelectedRecipe(recipe)}
-            />
-          ))}
-        </div>
+        <>
+          <h3 className="font-serif text-base text-foreground">All Recipes</h3>
+          {isLoading ? (
+            <p className="text-muted-foreground text-center py-12">Loading recipes...</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {(recipes || []).map((recipe) => (
+                <RecipeCard
+                  key={recipe.id}
+                  recipe={recipe}
+                  onClick={() => setSelectedRecipe(recipe)}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {selectedRecipe && (
