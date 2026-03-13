@@ -16,20 +16,50 @@ export function ResourcesView() {
   const { toast } = useToast();
   const qc = useQueryClient();
 
+  const pollJob = async (jobId: string, bookTitle: string) => {
+    const maxAttempts = 120; // 4 minutes max
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise(r => setTimeout(r, 2000));
+      const { data: job } = await supabase
+        .from('extraction_jobs')
+        .select('*')
+        .eq('id', jobId)
+        .single();
+
+      if (!job) continue;
+
+      if (job.status === 'completed') {
+        toast({ title: 'Extraction complete!', description: `Found ${job.result_count} recipes in "${bookTitle}"` });
+        qc.invalidateQueries({ queryKey: ['recipes'] });
+        setExtractingBookId(null);
+        return;
+      }
+      if (job.status === 'failed') {
+        toast({ title: 'Extraction failed', description: job.error || 'Unknown error', variant: 'destructive' });
+        setExtractingBookId(null);
+        return;
+      }
+    }
+    toast({ title: 'Extraction timed out', description: 'The extraction is taking too long. Check back later.', variant: 'destructive' });
+    setExtractingBookId(null);
+  };
+
   const handleExtractRecipes = async (bookId: string, bookTitle: string) => {
     setExtractingBookId(bookId);
-    toast({ title: 'Extracting recipes…', description: `Sending "${bookTitle}" to AI — this may take a minute for large books.` });
+    toast({ title: 'Extracting recipes…', description: `Sending "${bookTitle}" to AI — this may take a couple of minutes.` });
     try {
       const { data, error } = await supabase.functions.invoke('extract-recipes', {
         body: { bookId },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast({ title: 'Extraction complete!', description: data.message });
-      qc.invalidateQueries({ queryKey: ['recipes'] });
+
+      // Poll for completion
+      if (data?.jobId) {
+        pollJob(data.jobId, bookTitle);
+      }
     } catch (err: any) {
       toast({ title: 'Extraction failed', description: err.message, variant: 'destructive' });
-    } finally {
       setExtractingBookId(null);
     }
   };
