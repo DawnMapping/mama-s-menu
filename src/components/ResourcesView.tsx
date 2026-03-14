@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useBooks, getBookFileUrl } from '@/hooks/useBooks';
 import { supabase } from '@/integrations/supabase/client';
-import { BookOpen, Upload, Download, Eye, Trash2, FileText, Sparkles, Loader2 } from 'lucide-react';
+import { BookOpen, Upload, Download, Eye, Trash2, FileText, Sparkles, Loader2, ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { Progress } from '@/components/ui/progress';
@@ -13,6 +13,8 @@ export function ResourcesView() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [extractingBookId, setExtractingBookId] = useState<string | null>(null);
+  const [generatingImages, setGeneratingImages] = useState(false);
+  const [imageGenStatus, setImageGenStatus] = useState('');
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -144,6 +146,40 @@ export function ResourcesView() {
     toast({ title: 'Book removed' });
   };
 
+  const handleGenerateImages = async () => {
+    setGeneratingImages(true);
+    setImageGenStatus('Starting image generation...');
+
+    const runBatch = async (): Promise<boolean> => {
+      const { data, error } = await supabase.functions.invoke('generate-recipe-images', {
+        body: { batchSize: 5 },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return (data?.remaining || 0) > 0;
+    };
+
+    try {
+      let batch = 1;
+      let hasMore = true;
+      while (hasMore) {
+        setImageGenStatus(`Generating batch ${batch} (5 recipes at a time)...`);
+        hasMore = await runBatch();
+        batch++;
+        qc.invalidateQueries({ queryKey: ['recipes'] });
+        // Wait for background processing
+        await new Promise(r => setTimeout(r, 15000));
+      }
+      toast({ title: 'All recipe images generated! 🎨' });
+    } catch (err: any) {
+      toast({ title: 'Image generation error', description: err.message, variant: 'destructive' });
+    } finally {
+      setGeneratingImages(false);
+      setImageGenStatus('');
+      qc.invalidateQueries({ queryKey: ['recipes'] });
+    }
+  };
+
   // Inline PDF viewer
   if (viewingBook) {
     const book = books?.find(b => b.id === viewingBook);
@@ -185,22 +221,42 @@ export function ResourcesView() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="font-serif text-xl text-foreground">Resources</h2>
-        <label
-          className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity cursor-pointer ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
-        >
-          <Upload className="w-4 h-4" />
-          {uploading ? 'Uploading...' : 'Upload Book'}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.epub"
-            onChange={handleUpload}
-            className="hidden"
-          />
-        </label>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleGenerateImages}
+            disabled={generatingImages}
+            className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors ${generatingImages ? 'opacity-50 pointer-events-none' : ''}`}
+          >
+            {generatingImages ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
+            ) : (
+              <><ImageIcon className="w-4 h-4" /> Generate Photos</>
+            )}
+          </button>
+          <label
+            className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity cursor-pointer ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
+          >
+            <Upload className="w-4 h-4" />
+            {uploading ? 'Uploading...' : 'Upload Book'}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.epub"
+              onChange={handleUpload}
+              className="hidden"
+            />
+          </label>
+        </div>
       </div>
+
+      {generatingImages && imageGenStatus && (
+        <div className="rounded-lg bg-secondary/50 px-4 py-2.5 flex items-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+          <p className="text-sm text-foreground">{imageGenStatus}</p>
+        </div>
+      )}
 
       {uploading && (
         <div className="space-y-1.5">
