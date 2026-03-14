@@ -32,9 +32,9 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
         <h3 className="font-serif text-lg font-semibold leading-tight text-foreground">
           {recipe.title}
         </h3>
-        {recipe.book_source && (
+        {(recipe.book_source || recipe.page_reference) && (
           <p className="text-xs text-muted-foreground truncate">
-            {recipe.book_source}
+            {[recipe.book_source, recipe.page_reference].filter(Boolean).join(', ')}
           </p>
         )}
       </div>
