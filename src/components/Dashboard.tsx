@@ -60,13 +60,13 @@ export function Dashboard() {
           {/* Progress bar */}
           <div className="space-y-1.5">
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{plannedMeals} of {totalSlots} meals planned</span>
-              <span>{Math.round((plannedMeals / totalSlots) * 100)}%</span>
+              <span>{plannedMeals} of {DAYS_IN_WEEK} days planned</span>
+              <span>{Math.round((plannedMeals / DAYS_IN_WEEK) * 100)}%</span>
             </div>
             <div className="h-2 rounded-full bg-secondary overflow-hidden">
               <div
                 className="h-full rounded-full bg-primary transition-all duration-500"
-                style={{ width: `${(plannedMeals / totalSlots) * 100}%` }}
+                style={{ width: `${(plannedMeals / DAYS_IN_WEEK) * 100}%` }}
               />
             </div>
           </div>
