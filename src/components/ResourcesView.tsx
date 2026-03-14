@@ -13,6 +13,8 @@ export function ResourcesView() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [extractingBookId, setExtractingBookId] = useState<string | null>(null);
+  const [generatingImages, setGeneratingImages] = useState(false);
+  const [imageGenStatus, setImageGenStatus] = useState('');
   const { toast } = useToast();
   const qc = useQueryClient();
 
