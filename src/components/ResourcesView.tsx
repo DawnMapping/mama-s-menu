@@ -221,22 +221,42 @@ export function ResourcesView() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="font-serif text-xl text-foreground">Resources</h2>
-        <label
-          className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity cursor-pointer ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
-        >
-          <Upload className="w-4 h-4" />
-          {uploading ? 'Uploading...' : 'Upload Book'}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.epub"
-            onChange={handleUpload}
-            className="hidden"
-          />
-        </label>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleGenerateImages}
+            disabled={generatingImages}
+            className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors ${generatingImages ? 'opacity-50 pointer-events-none' : ''}`}
+          >
+            {generatingImages ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
+            ) : (
+              <><ImageIcon className="w-4 h-4" /> Generate Photos</>
+            )}
+          </button>
+          <label
+            className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity cursor-pointer ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
+          >
+            <Upload className="w-4 h-4" />
+            {uploading ? 'Uploading...' : 'Upload Book'}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.epub"
+              onChange={handleUpload}
+              className="hidden"
+            />
+          </label>
+        </div>
       </div>
+
+      {generatingImages && imageGenStatus && (
+        <div className="rounded-lg bg-secondary/50 px-4 py-2.5 flex items-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+          <p className="text-sm text-foreground">{imageGenStatus}</p>
+        </div>
+      )}
 
       {uploading && (
         <div className="space-y-1.5">
