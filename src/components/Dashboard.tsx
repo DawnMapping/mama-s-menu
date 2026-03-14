@@ -13,7 +13,7 @@ export function Dashboard() {
 
   const totalRecipes = recipes?.length || 0;
   const plannedMeals = lockedMeals?.length || 0;
-  const totalSlots = MEAL_SLOTS.length;
+  const DAYS_IN_WEEK = 7;
   const shoppingCount = shoppingItems?.filter(i => !i.checked).length || 0;
   const checkedCount = shoppingItems?.filter(i => i.checked).length || 0;
 
