@@ -120,7 +120,9 @@ async function processBook(book: any, jobId: string) {
       ];
     }
 
-    const systemPrompt = `You are a recipe extraction assistant analyzing a cookbook. Extract ALL recipes.
+    const systemPrompt = `You are a recipe extraction assistant analyzing a cookbook. Extract ONLY dinner and main meal recipes.
+EXCLUDE: breakfasts, brunches, smoothies, snacks, desserts, sweets, cakes, muffins, biscuits, porridge, muesli, cereals, morning teas, and any side dishes that aren't a complete meal.
+INCLUDE: dinners, mains, lunches that are substantial meals (e.g. curries, stir-fries, roasts, grills, casseroles, pasta dishes, salads that are a full meal, soups that are a main).
 For each recipe extract: title, page_reference (e.g. "p. 42" or null), ingredients (one per line), instructions (one step per line).
 Use the extract_recipes tool to return results.`;
 
