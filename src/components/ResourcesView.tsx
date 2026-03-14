@@ -146,6 +146,40 @@ export function ResourcesView() {
     toast({ title: 'Book removed' });
   };
 
+  const handleGenerateImages = async () => {
+    setGeneratingImages(true);
+    setImageGenStatus('Starting image generation...');
+
+    const runBatch = async (): Promise<boolean> => {
+      const { data, error } = await supabase.functions.invoke('generate-recipe-images', {
+        body: { batchSize: 5 },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return (data?.remaining || 0) > 0;
+    };
+
+    try {
+      let batch = 1;
+      let hasMore = true;
+      while (hasMore) {
+        setImageGenStatus(`Generating batch ${batch} (5 recipes at a time)...`);
+        hasMore = await runBatch();
+        batch++;
+        qc.invalidateQueries({ queryKey: ['recipes'] });
+        // Wait for background processing
+        await new Promise(r => setTimeout(r, 15000));
+      }
+      toast({ title: 'All recipe images generated! 🎨' });
+    } catch (err: any) {
+      toast({ title: 'Image generation error', description: err.message, variant: 'destructive' });
+    } finally {
+      setGeneratingImages(false);
+      setImageGenStatus('');
+      qc.invalidateQueries({ queryKey: ['recipes'] });
+    }
+  };
+
   // Inline PDF viewer
   if (viewingBook) {
     const book = books?.find(b => b.id === viewingBook);
