@@ -9,6 +9,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import { UtensilsCrossed } from 'lucide-react';
 
+const COLBERT_GIFS = [
+  'https://media.giphy.com/media/l0MYIwrG3D92em5SE/giphy.gif',
+  'https://media.giphy.com/media/3o7TKF1fSIs1R19B8k/giphy.gif',
+  'https://media.giphy.com/media/l0HlvtIPdijkIVEly/giphy.gif',
+  'https://media.giphy.com/media/YRuFixSNWFVcXaxpmX/giphy.gif',
+  'https://media.giphy.com/media/l4pTfx2qLszoacZRS/giphy.gif',
+  'https://media.giphy.com/media/xUPOqo6E1XvWXwlCYw/giphy.gif',
+];
+
 interface RecipeDetailProps {
   recipe: Recipe;
   open: boolean;
@@ -35,6 +44,7 @@ function TextList({ text, ordered }: { text: string; ordered?: boolean }) {
 
 export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDetailProps) {
   const [showSlotPicker, setShowSlotPicker] = useState(false);
+  const [celebrationGif, setCelebrationGif] = useState<string | null>(null);
   const lockMeal = useLockMeal();
   const warnings = recipe.warnings?.filter(Boolean) || [];
 
@@ -45,9 +55,44 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
       warnings_at_lock: warnings,
     });
     setShowSlotPicker(false);
+    // Pick a random Colbert GIF
+    const gif = COLBERT_GIFS[Math.floor(Math.random() * COLBERT_GIFS.length)];
+    setCelebrationGif(gif);
     toast.success(`Locked "${recipe.title}" for ${day}`);
+  };
+
+  const handleCloseCelebration = () => {
+    setCelebrationGif(null);
     onClose();
   };
+
+  // Show celebration GIF overlay
+  if (celebrationGif) {
+    return (
+      <Dialog open={true} onOpenChange={() => handleCloseCelebration()}>
+        <DialogContent className="max-w-sm p-0 overflow-hidden bg-card border-border/50 text-center">
+          <div className="p-6 space-y-4">
+            <h2 className="font-serif text-xl text-foreground animate-scale-in">
+              Locked in! 🎉
+            </h2>
+            <div className="rounded-lg overflow-hidden animate-fade-in">
+              <img
+                src={celebrationGif}
+                alt="Stephen Colbert celebrating"
+                className="w-full"
+              />
+            </div>
+            <p className="text-sm text-muted-foreground italic">
+              "{recipe.title}" is on the menu!
+            </p>
+            <Button onClick={handleCloseCelebration} className="w-full">
+              Nice! 👏
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
