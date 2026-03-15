@@ -16,6 +16,7 @@ export function ResourcesView() {
   const [extractingBookId, setExtractingBookId] = useState<string | null>(null);
   const [generatingImages, setGeneratingImages] = useState(false);
   const [imageGenStatus, setImageGenStatus] = useState('');
+  const [showCleanup, setShowCleanup] = useState(false);
   const { toast } = useToast();
   const qc = useQueryClient();
 
