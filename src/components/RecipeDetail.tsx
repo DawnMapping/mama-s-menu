@@ -137,7 +137,7 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
           {warnings.length > 0 && <WarningBox warnings={warnings} animate />}
           <StatusBar status={recipe.status} />
           <DialogHeader>
-            <DialogTitle className="font-serif text-2xl text-foreground">
+            <DialogTitle className="font-serif text-2xl text-foreground capitalize">
               {recipe.title}
             </DialogTitle>
           </DialogHeader>
