@@ -29,7 +29,7 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
       )}
       <div className="p-4 space-y-2">
         <StatusBar status={recipe.status} />
-        <h3 className="font-serif text-lg font-semibold leading-tight text-foreground">
+        <h3 className="font-serif text-lg font-semibold leading-tight text-foreground capitalize">
           {recipe.title}
         </h3>
         {(recipe.book_source || recipe.page_reference) && (
