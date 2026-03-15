@@ -237,6 +237,7 @@ export function ResourcesView() {
           >
             <ChefHat className="w-4 h-4" /> Cleanup Recipes
           </button>
+          <button
             onClick={handleGenerateImages}
             disabled={generatingImages}
             className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors ${generatingImages ? 'opacity-50 pointer-events-none' : ''}`}
