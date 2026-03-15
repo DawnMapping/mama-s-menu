@@ -232,6 +232,11 @@ export function ResourcesView() {
         <h2 className="font-serif text-xl text-foreground">Resources</h2>
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setShowCleanup(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
+          >
+            <ChefHat className="w-4 h-4" /> Cleanup Recipes
+          </button>
             onClick={handleGenerateImages}
             disabled={generatingImages}
             className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors ${generatingImages ? 'opacity-50 pointer-events-none' : ''}`}
