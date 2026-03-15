@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
 import { useBooks, getBookFileUrl } from '@/hooks/useBooks';
 import { supabase } from '@/integrations/supabase/client';
-import { BookOpen, Upload, Download, Eye, Trash2, FileText, Sparkles, Loader2, ImageIcon } from 'lucide-react';
+import { BookOpen, Upload, Download, Eye, Trash2, FileText, Sparkles, Loader2, ImageIcon, ChefHat } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { Progress } from '@/components/ui/progress';
+import { RecipeCleanup } from './RecipeCleanup';
 
 export function ResourcesView() {
   const { data: books, isLoading } = useBooks();

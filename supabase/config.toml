@@ -1,1 +1,4 @@
 project_id = "zezjbjntenxdlazriapg"
+
+[functions.classify-recipes]
+verify_jwt = false
