@@ -182,6 +182,11 @@ export function ResourcesView() {
     }
   };
 
+  // Recipe cleanup view
+  if (showCleanup) {
+    return <RecipeCleanup onBack={() => setShowCleanup(false)} />;
+  }
+
   // Inline PDF viewer
   if (viewingBook) {
     const book = books?.find(b => b.id === viewingBook);
