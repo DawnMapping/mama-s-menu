@@ -17,8 +17,6 @@ export function MumView() {
   const [activeFilter, setActiveFilter] = useState('All');
   const [preselectedDay, setPreselectedDay] = useState<string | undefined>();
   const [searchQuery, setSearchQuery] = useState('');
-  const [calendarOpen, setCalendarOpen] = useState(false);
-  const [browsingBook, setBrowsingBook] = useState<string | null>(null);
 
   const lockedCount = lockedMeals?.length || 0;
 
