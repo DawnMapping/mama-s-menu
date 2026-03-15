@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
 import { useBooks, getBookFileUrl } from '@/hooks/useBooks';
 import { supabase } from '@/integrations/supabase/client';
-import { BookOpen, Upload, Download, Eye, Trash2, FileText, Sparkles, Loader2, ImageIcon } from 'lucide-react';
+import { BookOpen, Upload, Download, Eye, Trash2, FileText, Sparkles, Loader2, ImageIcon, ChefHat } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { Progress } from '@/components/ui/progress';
+import { RecipeCleanup } from './RecipeCleanup';
 
 export function ResourcesView() {
   const { data: books, isLoading } = useBooks();
@@ -15,6 +16,7 @@ export function ResourcesView() {
   const [extractingBookId, setExtractingBookId] = useState<string | null>(null);
   const [generatingImages, setGeneratingImages] = useState(false);
   const [imageGenStatus, setImageGenStatus] = useState('');
+  const [showCleanup, setShowCleanup] = useState(false);
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -180,6 +182,11 @@ export function ResourcesView() {
     }
   };
 
+  // Recipe cleanup view
+  if (showCleanup) {
+    return <RecipeCleanup onBack={() => setShowCleanup(false)} />;
+  }
+
   // Inline PDF viewer
   if (viewingBook) {
     const book = books?.find(b => b.id === viewingBook);
@@ -224,6 +231,12 @@ export function ResourcesView() {
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="font-serif text-xl text-foreground">Resources</h2>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowCleanup(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
+          >
+            <ChefHat className="w-4 h-4" /> Cleanup Recipes
+          </button>
           <button
             onClick={handleGenerateImages}
             disabled={generatingImages}
