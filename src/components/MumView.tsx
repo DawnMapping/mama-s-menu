@@ -57,7 +57,7 @@ export function MumView() {
       {preselectedDay && (
         <div className="bg-rose-soft rounded-lg px-4 py-2 flex items-center justify-between">
           <p className="text-sm text-foreground">
-            Choosing recipe for <span className="font-semibold">{preselectedDay}</span>
+            Picking recipe for <span className="font-semibold">{preselectedDay}</span>
           </p>
           <button
             onClick={() => setPreselectedDay(undefined)}
