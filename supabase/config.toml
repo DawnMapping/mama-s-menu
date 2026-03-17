@@ -2,3 +2,6 @@ project_id = "zezjbjntenxdlazriapg"
 
 [functions.classify-recipes]
 verify_jwt = false
+
+[functions.estimate-nutrition]
+verify_jwt = false
