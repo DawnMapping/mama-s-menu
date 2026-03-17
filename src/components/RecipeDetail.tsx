@@ -183,6 +183,49 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
             </div>
           )}
 
+          {/* Nutrition Stats */}
+          {hasNutrition ? (
+            <div className="rounded-lg bg-secondary/50 p-3 space-y-2">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Per Serve (estimated)</h4>
+              <div className="grid grid-cols-4 gap-2 text-center">
+                <div>
+                  <p className="text-lg font-semibold text-foreground">{recipe.calories}</p>
+                  <p className="text-[10px] text-muted-foreground">cal</p>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-primary">{recipe.protein_g}g</p>
+                  <p className="text-[10px] text-muted-foreground">protein</p>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-foreground">{recipe.carbs_g}g</p>
+                  <p className="text-[10px] text-muted-foreground">carbs</p>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-foreground">{recipe.fat_g}g</p>
+                  <p className="text-[10px] text-muted-foreground">fat</p>
+                </div>
+              </div>
+              {totalTime && (
+                <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground pt-1">
+                  <Clock className="w-3 h-3" />
+                  {recipe.prep_time_min && <span>{recipe.prep_time_min}m prep</span>}
+                  {recipe.prep_time_min && recipe.cook_time_min && <span>+</span>}
+                  {recipe.cook_time_min && <span>{recipe.cook_time_min}m cook</span>}
+                </div>
+              )}
+            </div>
+          ) : recipe.ingredients ? (
+            <Button
+              variant="outline"
+              onClick={handleEstimate}
+              disabled={estimating}
+              className="w-full gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              {estimating ? 'Estimating...' : 'Estimate Nutrition'}
+            </Button>
+          ) : null}
+
           {!showSlotPicker ? (
             <Button
               onClick={() => preselectedDay ? handleLock(preselectedDay) : setShowSlotPicker(true)}
