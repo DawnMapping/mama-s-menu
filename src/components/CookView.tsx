@@ -1,7 +1,7 @@
 import { useLockedMeals, useUnlockMeal } from '@/hooks/useLockedMeals';
 import { WarningBox } from './WarningBox';
 import { Button } from '@/components/ui/button';
-import { Unlock } from 'lucide-react';
+import { X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function CookView() {
@@ -50,10 +50,11 @@ export function CookView() {
                 size="icon"
                 onClick={async () => {
                   await unlockMeal.mutateAsync(meal.id);
-                  toast.success('Meal unlocked');
+                  toast.success('Meal removed');
                 }}
+                title="Remove from plan"
               >
-                <Unlock className="w-4 h-4" />
+                <X className="w-4 h-4" />
               </Button>
             </div>
             {meal.warnings_at_lock && meal.warnings_at_lock.length > 0 && (

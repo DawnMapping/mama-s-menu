@@ -81,7 +81,7 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
     // Pick a random Colbert GIF
     const gif = COLBERT_GIFS[Math.floor(Math.random() * COLBERT_GIFS.length)];
     setCelebrationGif(gif);
-    toast.success(`Locked "${recipe.title}" for ${day}`);
+    toast.success(`Picked "${recipe.title}" for ${day}`);
   };
 
   const handleCloseCelebration = () => {
@@ -96,7 +96,7 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
         <DialogContent className="max-w-sm p-0 overflow-hidden bg-card border-border/50 text-center">
           <div className="p-6 space-y-4">
             <h2 className="font-serif text-xl text-foreground animate-scale-in">
-              Locked in! 🎉
+              Great choice! 🎉
             </h2>
             <div className="rounded-lg overflow-hidden animate-fade-in">
               <img
@@ -166,7 +166,7 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
               className="w-full"
               disabled={lockMeal.isPending}
             >
-              {preselectedDay ? `Lock for ${preselectedDay}` : 'Lock for...'}
+              {preselectedDay ? `Pick for ${preselectedDay}` : 'Pick for...'}
             </Button>
           ) : (
             <div className="space-y-2">

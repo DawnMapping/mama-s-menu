@@ -2,7 +2,7 @@ import { useRecipes } from '@/hooks/useRecipes';
 import { useLockedMeals } from '@/hooks/useLockedMeals';
 import { useShoppingList } from '@/hooks/useShoppingList';
 import { MEAL_SLOTS } from '@/lib/types';
-import { UtensilsCrossed, ChefHat, ShoppingCart, BookOpen, Lock, ArrowRight } from 'lucide-react';
+import { UtensilsCrossed, ChefHat, ShoppingCart, BookOpen, Check, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export function Dashboard() {
@@ -42,7 +42,7 @@ export function Dashboard() {
             <div className="space-y-2">
               {lockedMeals?.slice(0, 4).map(meal => (
                 <div key={meal.id} className="flex items-center gap-2.5">
-                  <Lock className="w-3.5 h-3.5 text-gold shrink-0" />
+                  <Check className="w-3.5 h-3.5 text-primary shrink-0" />
                   <span className="text-xs text-muted-foreground w-28 shrink-0">{meal.day}</span>
                   <span className="text-sm font-serif text-foreground truncate">{meal.recipes?.title}</span>
                 </div>
