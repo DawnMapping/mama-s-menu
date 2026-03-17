@@ -36,11 +36,11 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
         {/* Nutrition overlay badges */}
         {hasNutrition && (
           <div className="absolute bottom-2 left-2 right-2 flex items-center gap-1.5 flex-wrap">
+            <span className="inline-flex items-center rounded-full bg-primary/90 backdrop-blur-sm px-2 py-0.5 text-[11px] font-bold text-primary-foreground shadow-sm">
+              🏋️ {recipe.protein_g}g protein
+            </span>
             <span className="inline-flex items-center gap-1 rounded-full bg-background/85 backdrop-blur-sm px-2 py-0.5 text-[11px] font-semibold text-foreground shadow-sm">
               🔥 {recipe.calories}
-            </span>
-            <span className="inline-flex items-center rounded-full bg-primary/90 backdrop-blur-sm px-2 py-0.5 text-[11px] font-bold text-primary-foreground shadow-sm">
-              {recipe.protein_g}g protein
             </span>
             <span className="inline-flex items-center rounded-full bg-background/85 backdrop-blur-sm px-2 py-0.5 text-[11px] text-foreground/80 shadow-sm">
               C {recipe.carbs_g}g · F {recipe.fat_g}g
