@@ -209,7 +209,7 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
             )}
             <input ref={photoInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" disabled={uploadingPhoto} />
           </label>
-        )
+        )}
         <div className="p-6 pt-4 space-y-4">
           {warnings.length > 0 && <WarningBox warnings={warnings} animate />}
           <StatusBar status={recipe.status} />
