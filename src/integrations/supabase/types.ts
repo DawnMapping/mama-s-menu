@@ -121,12 +121,18 @@ export type Database = {
         Row: {
           banned_ingredients_found: string[] | null
           book_source: string | null
+          calories: number | null
+          carbs_g: number | null
+          cook_time_min: number | null
           created_at: string
+          fat_g: number | null
           id: string
           image_url: string | null
           ingredients: string | null
           instructions: string | null
           page_reference: string | null
+          prep_time_min: number | null
+          protein_g: number | null
           status: string
           title: string
           warnings: string[] | null
@@ -134,12 +140,18 @@ export type Database = {
         Insert: {
           banned_ingredients_found?: string[] | null
           book_source?: string | null
+          calories?: number | null
+          carbs_g?: number | null
+          cook_time_min?: number | null
           created_at?: string
+          fat_g?: number | null
           id?: string
           image_url?: string | null
           ingredients?: string | null
           instructions?: string | null
           page_reference?: string | null
+          prep_time_min?: number | null
+          protein_g?: number | null
           status?: string
           title: string
           warnings?: string[] | null
@@ -147,12 +159,18 @@ export type Database = {
         Update: {
           banned_ingredients_found?: string[] | null
           book_source?: string | null
+          calories?: number | null
+          carbs_g?: number | null
+          cook_time_min?: number | null
           created_at?: string
+          fat_g?: number | null
           id?: string
           image_url?: string | null
           ingredients?: string | null
           instructions?: string | null
           page_reference?: string | null
+          prep_time_min?: number | null
+          protein_g?: number | null
           status?: string
           title?: string
           warnings?: string[] | null
