@@ -1,6 +1,6 @@
 import type { Recipe } from '@/lib/types';
 import { StatusBar } from './StatusBar';
-import { UtensilsCrossed } from 'lucide-react';
+import { UtensilsCrossed, Flame, Clock } from 'lucide-react';
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -8,6 +8,10 @@ interface RecipeCardProps {
 }
 
 export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
+  const hasNutrition = recipe.calories != null;
+  const totalTime =
+    (recipe.prep_time_min || 0) + (recipe.cook_time_min || 0) || null;
+
   return (
     <button
       onClick={onClick}
@@ -36,6 +40,30 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
           <p className="text-xs text-muted-foreground truncate">
             {[recipe.book_source?.split(',')[0], recipe.page_reference].filter(Boolean).join(', ')}
           </p>
+        )}
+
+        {hasNutrition && (
+          <div className="flex items-center gap-3 pt-1 flex-wrap">
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <Flame className="w-3 h-3 text-destructive/70" />
+              {recipe.calories} cal
+            </span>
+            <span className="text-xs font-medium text-primary/80">
+              P {recipe.protein_g}g
+            </span>
+            <span className="text-xs text-muted-foreground">
+              C {recipe.carbs_g}g
+            </span>
+            <span className="text-xs text-muted-foreground">
+              F {recipe.fat_g}g
+            </span>
+            {totalTime && (
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="w-3 h-3" />
+                {totalTime}m
+              </span>
+            )}
+          </div>
         )}
       </div>
     </button>
