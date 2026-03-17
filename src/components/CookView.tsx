@@ -1,7 +1,7 @@
 import { useLockedMeals, useUnlockMeal } from '@/hooks/useLockedMeals';
 import { WarningBox } from './WarningBox';
 import { Button } from '@/components/ui/button';
-import { Unlock } from 'lucide-react';
+import { X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function CookView() {
