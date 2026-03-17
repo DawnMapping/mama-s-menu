@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { Recipe } from '@/lib/types';
 import { MEAL_SLOTS } from '@/lib/types';
 import { WarningBox } from './WarningBox';
@@ -7,7 +7,7 @@ import { useLockMeal } from '@/hooks/useLockedMeals';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { UtensilsCrossed, Flame, Clock, Sparkles } from 'lucide-react';
+import { UtensilsCrossed, Flame, Clock, Sparkles, Camera, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -71,11 +71,50 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
   const [showSlotPicker, setShowSlotPicker] = useState(false);
   const [celebrationGif, setCelebrationGif] = useState<string | null>(null);
   const [estimating, setEstimating] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const lockMeal = useLockMeal();
   const warnings = recipe.warnings?.filter(Boolean) || [];
   const hasNutrition = recipe.calories != null;
   const totalTime = (recipe.prep_time_min || 0) + (recipe.cook_time_min || 0) || null;
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    setUploadingPhoto(true);
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const filePath = `${recipe.id}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('recipe-images')
+        .upload(filePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('recipe-images')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from('recipes')
+        .update({ image_url: publicUrl })
+        .eq('id', recipe.id);
+      if (updateError) throw updateError;
+
+      toast.success('Photo updated!');
+      queryClient.invalidateQueries({ queryKey: ['recipes'] });
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload photo');
+    } finally {
+      setUploadingPhoto(false);
+      if (photoInputRef.current) photoInputRef.current.value = '';
+    }
+  };
 
   const handleEstimate = async () => {
     setEstimating(true);
@@ -144,18 +183,32 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden bg-card border-border/50 max-h-[90vh] overflow-y-auto">
         {recipe.image_url ? (
-          <div className="relative aspect-[16/10] overflow-hidden">
+          <div className="relative aspect-[16/10] overflow-hidden group/img">
             <img
               src={recipe.image_url}
               alt={recipe.title}
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
+            <label className="absolute top-2 right-2 cursor-pointer opacity-0 group-hover/img:opacity-100 transition-opacity">
+              <div className="rounded-full bg-background/80 backdrop-blur-sm p-2 hover:bg-background transition-colors">
+                {uploadingPhoto ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+              </div>
+              <input ref={photoInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" disabled={uploadingPhoto} />
+            </label>
           </div>
         ) : (
-          <div className="h-24 bg-secondary/50 flex items-center justify-center">
-            <UtensilsCrossed className="w-10 h-10 text-muted-foreground/30" />
-          </div>
+          <label className="h-24 bg-secondary/50 flex items-center justify-center cursor-pointer hover:bg-secondary/70 transition-colors gap-2">
+            {uploadingPhoto ? (
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            ) : (
+              <>
+                <Camera className="w-5 h-5 text-muted-foreground/50" />
+                <span className="text-sm text-muted-foreground">Add photo</span>
+              </>
+            )}
+            <input ref={photoInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" disabled={uploadingPhoto} />
+          </label>
         )}
         <div className="p-6 pt-4 space-y-4">
           {warnings.length > 0 && <WarningBox warnings={warnings} animate />}
