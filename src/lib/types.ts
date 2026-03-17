@@ -10,6 +10,12 @@ export interface Recipe {
   ingredients: string | null;
   instructions: string | null;
   created_at: string;
+  calories: number | null;
+  protein_g: number | null;
+  carbs_g: number | null;
+  fat_g: number | null;
+  prep_time_min: number | null;
+  cook_time_min: number | null;
 }
 
 export interface LockedMeal {

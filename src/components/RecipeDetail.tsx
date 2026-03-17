@@ -7,7 +7,9 @@ import { useLockMeal } from '@/hooks/useLockedMeals';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { UtensilsCrossed } from 'lucide-react';
+import { UtensilsCrossed, Flame, Clock, Sparkles } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 const COLBERT_GIFS = [
   'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExN3Zobzg2ZzhsN2V4bWY2OGo4ZXVmZXhnNzE2YXd4ZzMyM3FmemZzcyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/147JO3pIxNJ4oo/giphy.gif',
@@ -68,8 +70,29 @@ function TextList({ text, ordered }: { text: string; ordered?: boolean }) {
 export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDetailProps) {
   const [showSlotPicker, setShowSlotPicker] = useState(false);
   const [celebrationGif, setCelebrationGif] = useState<string | null>(null);
+  const [estimating, setEstimating] = useState(false);
+  const queryClient = useQueryClient();
   const lockMeal = useLockMeal();
   const warnings = recipe.warnings?.filter(Boolean) || [];
+  const hasNutrition = recipe.calories != null;
+  const totalTime = (recipe.prep_time_min || 0) + (recipe.cook_time_min || 0) || null;
+
+  const handleEstimate = async () => {
+    setEstimating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('estimate-nutrition', {
+        body: { recipe_id: recipe.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success('Nutrition estimated!');
+      queryClient.invalidateQueries({ queryKey: ['recipes'] });
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to estimate nutrition');
+    } finally {
+      setEstimating(false);
+    }
+  };
 
   const handleLock = async (day: string) => {
     await lockMeal.mutateAsync({
@@ -159,6 +182,49 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
               <TextList text={recipe.instructions} ordered />
             </div>
           )}
+
+          {/* Nutrition Stats */}
+          {hasNutrition ? (
+            <div className="rounded-lg bg-secondary/50 p-3 space-y-2">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Per Serve (estimated)</h4>
+              <div className="grid grid-cols-4 gap-2 text-center">
+                <div>
+                  <p className="text-lg font-semibold text-foreground">{recipe.calories}</p>
+                  <p className="text-[10px] text-muted-foreground">cal</p>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-primary">{recipe.protein_g}g</p>
+                  <p className="text-[10px] text-muted-foreground">protein</p>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-foreground">{recipe.carbs_g}g</p>
+                  <p className="text-[10px] text-muted-foreground">carbs</p>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-foreground">{recipe.fat_g}g</p>
+                  <p className="text-[10px] text-muted-foreground">fat</p>
+                </div>
+              </div>
+              {totalTime && (
+                <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground pt-1">
+                  <Clock className="w-3 h-3" />
+                  {recipe.prep_time_min && <span>{recipe.prep_time_min}m prep</span>}
+                  {recipe.prep_time_min && recipe.cook_time_min && <span>+</span>}
+                  {recipe.cook_time_min && <span>{recipe.cook_time_min}m cook</span>}
+                </div>
+              )}
+            </div>
+          ) : recipe.ingredients ? (
+            <Button
+              variant="outline"
+              onClick={handleEstimate}
+              disabled={estimating}
+              className="w-full gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              {estimating ? 'Estimating...' : 'Estimate Nutrition'}
+            </Button>
+          ) : null}
 
           {!showSlotPicker ? (
             <Button
