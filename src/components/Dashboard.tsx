@@ -72,23 +72,21 @@ function WeeklyNutrition({ lockedMeals, profile }: {
   profile: Profile;
 }) {
   const weeklyMacros = useMemo(() => {
-    if (!lockedMeals?.length) return null;
     let calories = 0, protein = 0, carbs = 0, fat = 0, mealsWithData = 0;
-    for (const meal of lockedMeals) {
-      const r = meal.recipes;
-      if (r?.calories != null) {
-        calories += r.calories;
-        protein += r.protein_g || 0;
-        carbs += r.carbs_g || 0;
-        fat += r.fat_g || 0;
-        mealsWithData++;
+    if (lockedMeals?.length) {
+      for (const meal of lockedMeals) {
+        const r = meal.recipes;
+        if (r?.calories != null) {
+          calories += r.calories;
+          protein += r.protein_g || 0;
+          carbs += r.carbs_g || 0;
+          fat += r.fat_g || 0;
+          mealsWithData++;
+        }
       }
     }
-    if (mealsWithData === 0) return null;
-    return { calories: Math.round(calories), protein: Math.round(protein), carbs: Math.round(carbs), fat: Math.round(fat), mealsWithData, totalMeals: lockedMeals.length };
+    return { calories: Math.round(calories), protein: Math.round(protein), carbs: Math.round(carbs), fat: Math.round(fat), mealsWithData, totalMeals: lockedMeals?.length || 0 };
   }, [lockedMeals]);
-
-  if (!weeklyMacros) return null;
 
   // Weekly targets = daily × 7
   const weekCal = profile.daily_calories_target * 7;
