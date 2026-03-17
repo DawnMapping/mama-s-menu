@@ -70,8 +70,29 @@ function TextList({ text, ordered }: { text: string; ordered?: boolean }) {
 export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDetailProps) {
   const [showSlotPicker, setShowSlotPicker] = useState(false);
   const [celebrationGif, setCelebrationGif] = useState<string | null>(null);
+  const [estimating, setEstimating] = useState(false);
+  const queryClient = useQueryClient();
   const lockMeal = useLockMeal();
   const warnings = recipe.warnings?.filter(Boolean) || [];
+  const hasNutrition = recipe.calories != null;
+  const totalTime = (recipe.prep_time_min || 0) + (recipe.cook_time_min || 0) || null;
+
+  const handleEstimate = async () => {
+    setEstimating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('estimate-nutrition', {
+        body: { recipe_id: recipe.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success('Nutrition estimated!');
+      queryClient.invalidateQueries({ queryKey: ['recipes'] });
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to estimate nutrition');
+    } finally {
+      setEstimating(false);
+    }
+  };
 
   const handleLock = async (day: string) => {
     await lockMeal.mutateAsync({
