@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { Recipe } from '@/lib/types';
 import { MEAL_SLOTS } from '@/lib/types';
 import { WarningBox } from './WarningBox';
@@ -7,7 +7,7 @@ import { useLockMeal } from '@/hooks/useLockedMeals';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { UtensilsCrossed, Flame, Clock, Sparkles } from 'lucide-react';
+import { UtensilsCrossed, Flame, Clock, Sparkles, Camera, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 
