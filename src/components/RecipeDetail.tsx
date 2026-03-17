@@ -142,14 +142,15 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg p-0 overflow-hidden bg-card border-border/50 max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden bg-card border-border/50 max-h-[90vh] overflow-y-auto">
         {recipe.image_url ? (
-          <div className="aspect-[16/10] overflow-hidden">
+          <div className="relative aspect-[16/10] overflow-hidden">
             <img
               src={recipe.image_url}
               alt={recipe.title}
               className="w-full h-full object-cover"
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
           </div>
         ) : (
           <div className="h-24 bg-secondary/50 flex items-center justify-center">
