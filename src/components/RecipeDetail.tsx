@@ -81,7 +81,7 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
     // Pick a random Colbert GIF
     const gif = COLBERT_GIFS[Math.floor(Math.random() * COLBERT_GIFS.length)];
     setCelebrationGif(gif);
-    toast.success(`Locked "${recipe.title}" for ${day}`);
+    toast.success(`Picked "${recipe.title}" for ${day}`);
   };
 
   const handleCloseCelebration = () => {
