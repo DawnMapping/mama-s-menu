@@ -183,19 +183,33 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden bg-card border-border/50 max-h-[90vh] overflow-y-auto">
         {recipe.image_url ? (
-          <div className="relative aspect-[16/10] overflow-hidden">
+          <div className="relative aspect-[16/10] overflow-hidden group/img">
             <img
               src={recipe.image_url}
               alt={recipe.title}
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
+            <label className="absolute top-2 right-2 cursor-pointer opacity-0 group-hover/img:opacity-100 transition-opacity">
+              <div className="rounded-full bg-background/80 backdrop-blur-sm p-2 hover:bg-background transition-colors">
+                {uploadingPhoto ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+              </div>
+              <input ref={photoInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" disabled={uploadingPhoto} />
+            </label>
           </div>
         ) : (
-          <div className="h-24 bg-secondary/50 flex items-center justify-center">
-            <UtensilsCrossed className="w-10 h-10 text-muted-foreground/30" />
-          </div>
-        )}
+          <label className="h-24 bg-secondary/50 flex items-center justify-center cursor-pointer hover:bg-secondary/70 transition-colors gap-2">
+            {uploadingPhoto ? (
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            ) : (
+              <>
+                <Camera className="w-5 h-5 text-muted-foreground/50" />
+                <span className="text-sm text-muted-foreground">Add photo</span>
+              </>
+            )}
+            <input ref={photoInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" disabled={uploadingPhoto} />
+          </label>
+        )
         <div className="p-6 pt-4 space-y-4">
           {warnings.length > 0 && <WarningBox warnings={warnings} animate />}
           <StatusBar status={recipe.status} />
