@@ -2,7 +2,7 @@ import { useRecipes } from '@/hooks/useRecipes';
 import { useLockedMeals } from '@/hooks/useLockedMeals';
 import { useShoppingList } from '@/hooks/useShoppingList';
 import { MEAL_SLOTS } from '@/lib/types';
-import { UtensilsCrossed, ChefHat, ShoppingCart, BookOpen, Lock, ArrowRight } from 'lucide-react';
+import { UtensilsCrossed, ChefHat, ShoppingCart, BookOpen, Check, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export function Dashboard() {
