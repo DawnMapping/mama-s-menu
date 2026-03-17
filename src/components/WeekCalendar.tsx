@@ -1,6 +1,8 @@
 import { MEAL_SLOTS } from '@/lib/types';
 import type { LockedMeal } from '@/lib/types';
-import { Lock } from 'lucide-react';
+import { Check, X } from 'lucide-react';
+import { useUnlockMeal } from '@/hooks/useLockedMeals';
+import { toast } from 'sonner';
 
 interface WeekCalendarProps {
   lockedMeals: LockedMeal[];
