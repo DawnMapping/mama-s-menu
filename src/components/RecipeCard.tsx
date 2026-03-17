@@ -43,25 +43,33 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
         )}
 
         {hasNutrition && (
-          <div className="flex items-center gap-3 pt-1 flex-wrap">
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <Flame className="w-3 h-3 text-destructive/70" />
-              {recipe.calories} cal
-            </span>
-            <span className="text-xs font-medium text-primary/80">
-              P {recipe.protein_g}g
-            </span>
-            <span className="text-xs text-muted-foreground">
-              C {recipe.carbs_g}g
-            </span>
-            <span className="text-xs text-muted-foreground">
-              F {recipe.fat_g}g
-            </span>
+          <div className="rounded-md bg-secondary/60 px-3 py-2 mt-1">
+            <div className="flex items-center justify-between gap-1">
+              <div className="flex items-center gap-1">
+                <Flame className="w-3.5 h-3.5 text-destructive/70" />
+                <span className="text-sm font-semibold text-foreground">{recipe.calories}</span>
+                <span className="text-[10px] text-muted-foreground">cal</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-xs">
+                <span>
+                  <span className="font-semibold text-primary">{recipe.protein_g}g</span>
+                  <span className="text-muted-foreground ml-0.5">P</span>
+                </span>
+                <span>
+                  <span className="font-medium text-foreground/80">{recipe.carbs_g}g</span>
+                  <span className="text-muted-foreground ml-0.5">C</span>
+                </span>
+                <span>
+                  <span className="font-medium text-foreground/80">{recipe.fat_g}g</span>
+                  <span className="text-muted-foreground ml-0.5">F</span>
+                </span>
+              </div>
+            </div>
             {totalTime && (
-              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1 mt-1 text-[11px] text-muted-foreground">
                 <Clock className="w-3 h-3" />
-                {totalTime}m
-              </span>
+                <span>{totalTime} min total</span>
+              </div>
             )}
           </div>
         )}
