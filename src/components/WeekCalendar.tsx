@@ -12,6 +12,13 @@ interface WeekCalendarProps {
 
 export function WeekCalendar({ lockedMeals, onSlotClick, onLockedClick }: WeekCalendarProps) {
   const mealsByDay = new Map(lockedMeals.map((m) => [m.day, m]));
+  const unlockMeal = useUnlockMeal();
+
+  const handleRemove = async (e: React.MouseEvent, meal: LockedMeal) => {
+    e.stopPropagation();
+    await unlockMeal.mutateAsync(meal.id);
+    toast.success(`Removed "${meal.recipes?.title}" from ${meal.day}`);
+  };
 
   return (
     <div className="space-y-2">
@@ -22,15 +29,23 @@ export function WeekCalendar({ lockedMeals, onSlotClick, onLockedClick }: WeekCa
             <button
               key={slot}
               onClick={() => onLockedClick(meal)}
-              className="flex items-center gap-2 rounded-lg bg-card border border-border/50 p-3 text-left hover:shadow-sm transition-shadow"
+              className="group flex items-center gap-2 rounded-lg bg-card border border-primary/30 p-3 text-left hover:shadow-sm transition-shadow relative"
             >
-              <Lock className="w-4 h-4 text-gold shrink-0 animate-lock" />
-              <div className="min-w-0">
+              <Check className="w-4 h-4 text-primary shrink-0" />
+              <div className="min-w-0 flex-1">
                 <p className="text-xs text-muted-foreground">{slot}</p>
                 <p className="text-sm font-serif font-semibold text-foreground truncate">
                   {meal.recipes?.title}
                 </p>
               </div>
+              <span
+                role="button"
+                onClick={(e) => handleRemove(e, meal)}
+                className="opacity-0 group-hover:opacity-100 p-1 rounded-full hover:bg-destructive/10 transition-all"
+                title="Remove"
+              >
+                <X className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
+              </span>
             </button>
           ) : (
             <button

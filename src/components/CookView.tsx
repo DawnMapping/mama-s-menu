@@ -50,10 +50,11 @@ export function CookView() {
                 size="icon"
                 onClick={async () => {
                   await unlockMeal.mutateAsync(meal.id);
-                  toast.success('Meal unlocked');
+                  toast.success('Meal removed');
                 }}
+                title="Remove from plan"
               >
-                <Unlock className="w-4 h-4" />
+                <X className="w-4 h-4" />
               </Button>
             </div>
             {meal.warnings_at_lock && meal.warnings_at_lock.length > 0 && (

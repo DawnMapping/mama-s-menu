@@ -166,7 +166,7 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
               className="w-full"
               disabled={lockMeal.isPending}
             >
-              {preselectedDay ? `Lock for ${preselectedDay}` : 'Lock for...'}
+              {preselectedDay ? `Pick for ${preselectedDay}` : 'Pick for...'}
             </Button>
           ) : (
             <div className="space-y-2">
