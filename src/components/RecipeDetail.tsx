@@ -7,7 +7,9 @@ import { useLockMeal } from '@/hooks/useLockedMeals';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { UtensilsCrossed } from 'lucide-react';
+import { UtensilsCrossed, Flame, Clock, Sparkles } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 const COLBERT_GIFS = [
   'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExN3Zobzg2ZzhsN2V4bWY2OGo4ZXVmZXhnNzE2YXd4ZzMyM3FmemZzcyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/147JO3pIxNJ4oo/giphy.gif',
