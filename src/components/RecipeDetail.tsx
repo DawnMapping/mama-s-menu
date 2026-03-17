@@ -156,7 +156,7 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
             <UtensilsCrossed className="w-10 h-10 text-muted-foreground/30" />
           </div>
         )}
-        <div className="p-6 space-y-4">
+        <div className="p-6 pt-4 space-y-4">
           {warnings.length > 0 && <WarningBox warnings={warnings} animate />}
           <StatusBar status={recipe.status} />
           <DialogHeader>
@@ -170,31 +170,19 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
               {recipe.page_reference && `, ${recipe.page_reference}`}
             </p>
           )}
-          {recipe.ingredients && (
-            <div>
-              <h4 className="font-serif text-base font-semibold text-foreground mb-2">Ingredients</h4>
-              <TextList text={recipe.ingredients} />
-            </div>
-          )}
-          {recipe.instructions && (
-            <div>
-              <h4 className="font-serif text-base font-semibold text-foreground mb-2">Method</h4>
-              <TextList text={recipe.instructions} ordered />
-            </div>
-          )}
 
-          {/* Nutrition Stats */}
+          {/* Nutrition Stats - prominent position */}
           {hasNutrition ? (
             <div className="rounded-lg bg-secondary/50 p-3 space-y-2">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Per Serve (estimated)</h4>
               <div className="grid grid-cols-4 gap-2 text-center">
                 <div>
-                  <p className="text-lg font-semibold text-foreground">{recipe.calories}</p>
-                  <p className="text-[10px] text-muted-foreground">cal</p>
+                  <p className="text-lg font-semibold text-primary">{recipe.protein_g}g</p>
+                  <p className="text-[10px] text-muted-foreground">🏋️ protein</p>
                 </div>
                 <div>
-                  <p className="text-lg font-semibold text-primary">{recipe.protein_g}g</p>
-                  <p className="text-[10px] text-muted-foreground">protein</p>
+                  <p className="text-lg font-semibold text-foreground">{recipe.calories}</p>
+                  <p className="text-[10px] text-muted-foreground">🔥 cal</p>
                 </div>
                 <div>
                   <p className="text-lg font-semibold text-foreground">{recipe.carbs_g}g</p>
@@ -225,6 +213,19 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
               {estimating ? 'Estimating...' : 'Estimate Nutrition'}
             </Button>
           ) : null}
+
+          {recipe.ingredients && (
+            <div>
+              <h4 className="font-serif text-base font-semibold text-foreground mb-2">Ingredients</h4>
+              <TextList text={recipe.ingredients} />
+            </div>
+          )}
+          {recipe.instructions && (
+            <div>
+              <h4 className="font-serif text-base font-semibold text-foreground mb-2">Method</h4>
+              <TextList text={recipe.instructions} ordered />
+            </div>
+          )}
 
           {!showSlotPicker ? (
             <Button
