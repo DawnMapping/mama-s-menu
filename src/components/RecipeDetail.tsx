@@ -156,7 +156,7 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
             <UtensilsCrossed className="w-10 h-10 text-muted-foreground/30" />
           </div>
         )}
-        <div className="p-6 space-y-4">
+        <div className="p-6 pt-4 space-y-4">
           {warnings.length > 0 && <WarningBox warnings={warnings} animate />}
           <StatusBar status={recipe.status} />
           <DialogHeader>
