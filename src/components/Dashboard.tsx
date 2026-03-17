@@ -1,32 +1,79 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useRecipes } from '@/hooks/useRecipes';
 import { useLockedMeals } from '@/hooks/useLockedMeals';
 import { useShoppingList } from '@/hooks/useShoppingList';
+import { useProfiles, useActiveProfileId, setActiveProfileId, type Profile } from '@/hooks/useProfiles';
 import { MEAL_SLOTS } from '@/lib/types';
-import { UtensilsCrossed, ChefHat, ShoppingCart, BookOpen, Check, ArrowRight, Flame } from 'lucide-react';
+import { UtensilsCrossed, ChefHat, ShoppingCart, BookOpen, Check, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-export function Dashboard() {
-  const { data: recipes } = useRecipes();
-  const { data: lockedMeals } = useLockedMeals();
-  const { data: shoppingItems } = useShoppingList();
-  const navigate = useNavigate();
-
-  const totalRecipes = recipes?.length || 0;
-  const plannedMeals = lockedMeals?.length || 0;
-  const DAYS_IN_WEEK = 7;
-  const shoppingCount = shoppingItems?.filter(i => !i.checked).length || 0;
-  const checkedCount = shoppingItems?.filter(i => i.checked).length || 0;
-
-  const nextEmptySlot = MEAL_SLOTS.find(
-    slot => !lockedMeals?.some(m => m.day === slot)
+function ProfilePicker({ profiles, activeId, onSelect }: {
+  profiles: Profile[];
+  activeId: string | null;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <div className="flex gap-2">
+      {profiles.map(p => (
+        <button
+          key={p.id}
+          onClick={() => onSelect(p.id)}
+          className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all ${
+            activeId === p.id
+              ? 'bg-primary text-primary-foreground shadow-sm'
+              : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
+          }`}
+        >
+          <span>{p.avatar_emoji}</span>
+          <span>{p.name}</span>
+        </button>
+      ))}
+    </div>
   );
+}
 
-  // Weekly macro totals from picked meals
+function MacroRing({ label, value, target, emoji }: {
+  label: string;
+  value: number;
+  target: number;
+  emoji?: string;
+}) {
+  const pct = Math.min(Math.round((value / target) * 100), 100);
+  const isOver = value > target;
+  return (
+    <div className="flex flex-col items-center gap-1.5">
+      <div className="relative w-16 h-16">
+        <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+          <circle cx="18" cy="18" r="15.5" fill="none" stroke="hsl(var(--secondary))" strokeWidth="3" />
+          <circle
+            cx="18" cy="18" r="15.5" fill="none"
+            stroke={isOver ? 'hsl(var(--destructive))' : 'hsl(var(--primary))'}
+            strokeWidth="3"
+            strokeDasharray={`${pct} ${100 - pct}`}
+            strokeLinecap="round"
+            className="transition-all duration-700"
+          />
+        </svg>
+        <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-foreground">
+          {pct}%
+        </span>
+      </div>
+      <div className="text-center">
+        <p className="text-sm font-semibold text-foreground">{value}{label !== 'Calories' ? 'g' : ''}</p>
+        <p className="text-[10px] text-muted-foreground">{emoji} {label}</p>
+        <p className="text-[10px] text-muted-foreground">/ {target}{label !== 'Calories' ? 'g' : ''}</p>
+      </div>
+    </div>
+  );
+}
+
+function WeeklyNutrition({ lockedMeals, profile }: {
+  lockedMeals: any[] | undefined;
+  profile: Profile;
+}) {
   const weeklyMacros = useMemo(() => {
     if (!lockedMeals?.length) return null;
-    let calories = 0, protein = 0, carbs = 0, fat = 0;
-    let mealsWithData = 0;
+    let calories = 0, protein = 0, carbs = 0, fat = 0, mealsWithData = 0;
     for (const meal of lockedMeals) {
       const r = meal.recipes;
       if (r?.calories != null) {
@@ -38,17 +85,72 @@ export function Dashboard() {
       }
     }
     if (mealsWithData === 0) return null;
-    return {
-      calories: Math.round(calories),
-      protein: Math.round(protein),
-      carbs: Math.round(carbs),
-      fat: Math.round(fat),
-      mealsWithData,
-      totalMeals: lockedMeals.length,
-      avgCalories: Math.round(calories / mealsWithData),
-      avgProtein: Math.round(protein / mealsWithData),
-    };
+    return { calories: Math.round(calories), protein: Math.round(protein), carbs: Math.round(carbs), fat: Math.round(fat), mealsWithData, totalMeals: lockedMeals.length };
   }, [lockedMeals]);
+
+  if (!weeklyMacros) return null;
+
+  // Weekly targets = daily × 7
+  const weekCal = profile.daily_calories_target * 7;
+  const weekPro = profile.daily_protein_g_target * 7;
+  const weekCarb = profile.daily_carbs_g_target * 7;
+  const weekFat = profile.daily_fat_g_target * 7;
+
+  return (
+    <section className="rounded-xl border border-primary/20 bg-card p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="font-serif text-lg text-foreground">
+          {profile.avatar_emoji} {profile.name}'s Week
+        </h2>
+        <span className="text-[11px] text-muted-foreground">
+          {weeklyMacros.mealsWithData} of {weeklyMacros.totalMeals} meals tracked
+        </span>
+      </div>
+
+      <div className="flex justify-around">
+        <MacroRing label="Protein" value={weeklyMacros.protein} target={weekPro} emoji="🏋️" />
+        <MacroRing label="Calories" value={weeklyMacros.calories} target={weekCal} emoji="🔥" />
+        <MacroRing label="Carbs" value={weeklyMacros.carbs} target={weekCarb} />
+        <MacroRing label="Fat" value={weeklyMacros.fat} target={weekFat} />
+      </div>
+    </section>
+  );
+}
+
+export function Dashboard() {
+  const { data: recipes } = useRecipes();
+  const { data: lockedMeals } = useLockedMeals();
+  const { data: shoppingItems } = useShoppingList();
+  const { data: profiles } = useProfiles();
+  const navigate = useNavigate();
+
+  const [activeProfileId, setActiveProfile] = useState<string | null>(useActiveProfileId());
+
+  // Auto-select first profile if none active
+  useEffect(() => {
+    if (!activeProfileId && profiles?.length) {
+      const id = profiles[0].id;
+      setActiveProfile(id);
+      setActiveProfileId(id);
+    }
+  }, [profiles, activeProfileId]);
+
+  const activeProfile = profiles?.find(p => p.id === activeProfileId) || null;
+
+  const totalRecipes = recipes?.length || 0;
+  const plannedMeals = lockedMeals?.length || 0;
+  const DAYS_IN_WEEK = 7;
+  const shoppingCount = shoppingItems?.filter(i => !i.checked).length || 0;
+  const checkedCount = shoppingItems?.filter(i => i.checked).length || 0;
+
+  const nextEmptySlot = MEAL_SLOTS.find(
+    slot => !lockedMeals?.some(m => m.day === slot)
+  );
+
+  const handleProfileSelect = (id: string) => {
+    setActiveProfile(id);
+    setActiveProfileId(id);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -62,41 +164,18 @@ export function Dashboard() {
       </header>
 
       <main className="container py-6 space-y-6">
-        {/* Weekly Macros */}
-        {weeklyMacros && (
-          <section className="rounded-xl border border-primary/20 bg-card p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-serif text-lg text-foreground">Weekly Nutrition</h2>
-              <span className="text-[11px] text-muted-foreground">
-                {weeklyMacros.mealsWithData} of {weeklyMacros.totalMeals} meals tracked
-              </span>
-            </div>
+        {/* Profile Picker */}
+        {profiles && profiles.length > 0 && (
+          <ProfilePicker
+            profiles={profiles}
+            activeId={activeProfileId}
+            onSelect={handleProfileSelect}
+          />
+        )}
 
-            <div className="grid grid-cols-4 gap-3 text-center">
-              <div className="rounded-lg bg-primary/10 p-3">
-                <p className="text-2xl font-bold text-primary">{weeklyMacros.protein}g</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">🏋️ protein</p>
-              </div>
-              <div className="rounded-lg bg-secondary/60 p-3">
-                <p className="text-2xl font-bold text-foreground">{weeklyMacros.calories}</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">🔥 calories</p>
-              </div>
-              <div className="rounded-lg bg-secondary/60 p-3">
-                <p className="text-2xl font-bold text-foreground">{weeklyMacros.carbs}g</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">carbs</p>
-              </div>
-              <div className="rounded-lg bg-secondary/60 p-3">
-                <p className="text-2xl font-bold text-foreground">{weeklyMacros.fat}g</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">fat</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-1">
-              <span>Avg per meal: <strong className="text-foreground">{weeklyMacros.avgCalories} cal</strong></span>
-              <span className="text-border">|</span>
-              <span>Avg protein: <strong className="text-primary">{weeklyMacros.avgProtein}g</strong></span>
-            </div>
-          </section>
+        {/* Weekly Nutrition with targets */}
+        {activeProfile && (
+          <WeeklyNutrition lockedMeals={lockedMeals} profile={activeProfile} />
         )}
 
         {/* This Week Summary */}

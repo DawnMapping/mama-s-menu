@@ -117,6 +117,39 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          avatar_emoji: string | null
+          created_at: string
+          daily_calories_target: number | null
+          daily_carbs_g_target: number | null
+          daily_fat_g_target: number | null
+          daily_protein_g_target: number | null
+          id: string
+          name: string
+        }
+        Insert: {
+          avatar_emoji?: string | null
+          created_at?: string
+          daily_calories_target?: number | null
+          daily_carbs_g_target?: number | null
+          daily_fat_g_target?: number | null
+          daily_protein_g_target?: number | null
+          id?: string
+          name: string
+        }
+        Update: {
+          avatar_emoji?: string | null
+          created_at?: string
+          daily_calories_target?: number | null
+          daily_carbs_g_target?: number | null
+          daily_fat_g_target?: number | null
+          daily_protein_g_target?: number | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       recipes: {
         Row: {
           banned_ingredients_found: string[] | null
