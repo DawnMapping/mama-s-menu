@@ -71,11 +71,50 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
   const [showSlotPicker, setShowSlotPicker] = useState(false);
   const [celebrationGif, setCelebrationGif] = useState<string | null>(null);
   const [estimating, setEstimating] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const lockMeal = useLockMeal();
   const warnings = recipe.warnings?.filter(Boolean) || [];
   const hasNutrition = recipe.calories != null;
   const totalTime = (recipe.prep_time_min || 0) + (recipe.cook_time_min || 0) || null;
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    setUploadingPhoto(true);
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const filePath = `${recipe.id}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('recipe-images')
+        .upload(filePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('recipe-images')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from('recipes')
+        .update({ image_url: publicUrl })
+        .eq('id', recipe.id);
+      if (updateError) throw updateError;
+
+      toast.success('Photo updated!');
+      queryClient.invalidateQueries({ queryKey: ['recipes'] });
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload photo');
+    } finally {
+      setUploadingPhoto(false);
+      if (photoInputRef.current) photoInputRef.current.value = '';
+    }
+  };
 
   const handleEstimate = async () => {
     setEstimating(true);
