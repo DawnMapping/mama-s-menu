@@ -72,7 +72,7 @@ function WeeklyNutrition({ lockedMeals, profile }: {
   profile: Profile;
 }) {
   const weeklyMacros = useMemo(() => {
-    let calories = 0, protein = 0, carbs = 0, fat = 0, mealsWithData = 0;
+    let calories = 0, protein = 0, carbs = 0, fat = 0, fibre = 0, mealsWithData = 0;
     if (lockedMeals?.length) {
       for (const meal of lockedMeals) {
         const r = meal.recipes;
@@ -81,11 +81,12 @@ function WeeklyNutrition({ lockedMeals, profile }: {
           protein += r.protein_g || 0;
           carbs += r.carbs_g || 0;
           fat += r.fat_g || 0;
+          fibre += r.fibre_g || 0;
           mealsWithData++;
         }
       }
     }
-    return { calories: Math.round(calories), protein: Math.round(protein), carbs: Math.round(carbs), fat: Math.round(fat), mealsWithData, totalMeals: lockedMeals?.length || 0 };
+    return { calories: Math.round(calories), protein: Math.round(protein), carbs: Math.round(carbs), fat: Math.round(fat), fibre: Math.round(fibre), mealsWithData, totalMeals: lockedMeals?.length || 0 };
   }, [lockedMeals]);
 
   // Weekly targets = daily × 7
