@@ -43,7 +43,7 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
               🔥 {recipe.calories}
             </span>
             <span className="inline-flex items-center rounded-full bg-background/85 backdrop-blur-sm px-2 py-0.5 text-[11px] text-foreground/80 shadow-sm">
-              C {recipe.carbs_g}g · F {recipe.fat_g}g
+              C {recipe.carbs_g}g · F {recipe.fat_g}g · Fi {recipe.fibre_g ?? '–'}g
             </span>
             {totalTime && (
               <span className="inline-flex items-center gap-0.5 rounded-full bg-background/85 backdrop-blur-sm px-2 py-0.5 text-[11px] text-foreground/80 shadow-sm">
