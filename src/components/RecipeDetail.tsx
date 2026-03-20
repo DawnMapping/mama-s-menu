@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { Recipe } from '@/lib/types';
 import { MEAL_SLOTS } from '@/lib/types';
 import { WarningBox } from './WarningBox';
