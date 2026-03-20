@@ -94,6 +94,7 @@ function WeeklyNutrition({ lockedMeals, profile }: {
   const weekPro = profile.daily_protein_g_target * 7;
   const weekCarb = profile.daily_carbs_g_target * 7;
   const weekFat = profile.daily_fat_g_target * 7;
+  const weekFibre = profile.daily_fibre_g_target * 7;
 
   return (
     <section className="rounded-xl border border-primary/20 bg-card p-5 space-y-4">
