@@ -124,6 +124,7 @@ export type Database = {
           daily_calories_target: number | null
           daily_carbs_g_target: number | null
           daily_fat_g_target: number | null
+          daily_fibre_g_target: number | null
           daily_protein_g_target: number | null
           id: string
           name: string
@@ -134,6 +135,7 @@ export type Database = {
           daily_calories_target?: number | null
           daily_carbs_g_target?: number | null
           daily_fat_g_target?: number | null
+          daily_fibre_g_target?: number | null
           daily_protein_g_target?: number | null
           id?: string
           name: string
@@ -144,6 +146,7 @@ export type Database = {
           daily_calories_target?: number | null
           daily_carbs_g_target?: number | null
           daily_fat_g_target?: number | null
+          daily_fibre_g_target?: number | null
           daily_protein_g_target?: number | null
           id?: string
           name?: string
@@ -159,6 +162,7 @@ export type Database = {
           cook_time_min: number | null
           created_at: string
           fat_g: number | null
+          fibre_g: number | null
           id: string
           image_url: string | null
           ingredients: string | null
@@ -178,6 +182,7 @@ export type Database = {
           cook_time_min?: number | null
           created_at?: string
           fat_g?: number | null
+          fibre_g?: number | null
           id?: string
           image_url?: string | null
           ingredients?: string | null
@@ -197,6 +202,7 @@ export type Database = {
           cook_time_min?: number | null
           created_at?: string
           fat_g?: number | null
+          fibre_g?: number | null
           id?: string
           image_url?: string | null
           ingredients?: string | null

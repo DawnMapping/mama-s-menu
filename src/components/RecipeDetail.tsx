@@ -244,7 +244,7 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
           {hasNutrition ? (
             <div className="rounded-lg bg-secondary/50 p-3 space-y-2">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Per Serve (estimated)</h4>
-              <div className="grid grid-cols-4 gap-2 text-center">
+              <div className="grid grid-cols-5 gap-2 text-center">
                 <div>
                   <p className="text-lg font-semibold text-primary">{recipe.protein_g}g</p>
                   <p className="text-[10px] text-muted-foreground">🏋️ protein</p>
@@ -260,6 +260,10 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
                 <div>
                   <p className="text-lg font-semibold text-foreground">{recipe.fat_g}g</p>
                   <p className="text-[10px] text-muted-foreground">fat</p>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-foreground">{recipe.fibre_g ?? '–'}g</p>
+                  <p className="text-[10px] text-muted-foreground">🌾 fibre</p>
                 </div>
               </div>
               {totalTime && (

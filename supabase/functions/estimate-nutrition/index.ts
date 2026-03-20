@@ -43,7 +43,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a nutrition estimation assistant. Given a recipe's ingredients, estimate per-serve nutritional values and cooking times. Be reasonable and realistic with estimates. Use Australian serving conventions.`,
+            content: `You are a nutrition estimation assistant. Given a recipe's ingredients, estimate per-serve nutritional values and cooking times. Be reasonable and realistic with estimates. Use Australian serving conventions. Include dietary fibre.`,
           },
           {
             role: "user",
@@ -63,10 +63,11 @@ serve(async (req) => {
                   protein_g: { type: "number", description: "Grams of protein per serve" },
                   carbs_g: { type: "number", description: "Grams of carbohydrates per serve" },
                   fat_g: { type: "number", description: "Grams of fat per serve" },
+                  fibre_g: { type: "number", description: "Grams of dietary fibre per serve" },
                   prep_time_min: { type: "integer", description: "Estimated prep time in minutes" },
                   cook_time_min: { type: "integer", description: "Estimated cook time in minutes" },
                 },
-                required: ["calories", "protein_g", "carbs_g", "fat_g", "prep_time_min", "cook_time_min"],
+                required: ["calories", "protein_g", "carbs_g", "fat_g", "fibre_g", "prep_time_min", "cook_time_min"],
                 additionalProperties: false,
               },
             },
@@ -108,6 +109,7 @@ serve(async (req) => {
         protein_g: nutrition.protein_g,
         carbs_g: nutrition.carbs_g,
         fat_g: nutrition.fat_g,
+        fibre_g: nutrition.fibre_g,
         prep_time_min: nutrition.prep_time_min,
         cook_time_min: nutrition.cook_time_min,
       })

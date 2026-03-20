@@ -1,0 +1,1 @@
+ALTER TABLE public.recipes ADD COLUMN fibre_g numeric NULL;
