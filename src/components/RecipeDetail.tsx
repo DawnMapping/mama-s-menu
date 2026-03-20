@@ -80,6 +80,13 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
   const hasNutrition = recipe.calories != null;
   const totalTime = (recipe.prep_time_min || 0) + (recipe.cook_time_min || 0) || null;
 
+  // Scroll dialog to top when opened
+  useEffect(() => {
+    if (open && contentRef.current) {
+      setTimeout(() => contentRef.current?.scrollTo(0, 0), 0);
+    }
+  }, [open, recipe.id]);
+
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
