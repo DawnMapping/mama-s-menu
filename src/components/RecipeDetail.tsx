@@ -73,6 +73,7 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
   const [estimating, setEstimating] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const lockMeal = useLockMeal();
   const warnings = recipe.warnings?.filter(Boolean) || [];
