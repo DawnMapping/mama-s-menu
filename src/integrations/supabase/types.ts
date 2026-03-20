@@ -159,6 +159,7 @@ export type Database = {
           cook_time_min: number | null
           created_at: string
           fat_g: number | null
+          fibre_g: number | null
           id: string
           image_url: string | null
           ingredients: string | null
@@ -178,6 +179,7 @@ export type Database = {
           cook_time_min?: number | null
           created_at?: string
           fat_g?: number | null
+          fibre_g?: number | null
           id?: string
           image_url?: string | null
           ingredients?: string | null
@@ -197,6 +199,7 @@ export type Database = {
           cook_time_min?: number | null
           created_at?: string
           fat_g?: number | null
+          fibre_g?: number | null
           id?: string
           image_url?: string | null
           ingredients?: string | null
