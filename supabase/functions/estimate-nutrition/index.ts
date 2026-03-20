@@ -43,7 +43,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a nutrition estimation assistant. Given a recipe's ingredients, estimate per-serve nutritional values and cooking times. Be reasonable and realistic with estimates. Use Australian serving conventions.`,
+            content: `You are a nutrition estimation assistant. Given a recipe's ingredients, estimate per-serve nutritional values and cooking times. Be reasonable and realistic with estimates. Use Australian serving conventions. Include dietary fibre.`,
           },
           {
             role: "user",
