@@ -109,6 +109,7 @@ serve(async (req) => {
         protein_g: nutrition.protein_g,
         carbs_g: nutrition.carbs_g,
         fat_g: nutrition.fat_g,
+        fibre_g: nutrition.fibre_g,
         prep_time_min: nutrition.prep_time_min,
         cook_time_min: nutrition.cook_time_min,
       })

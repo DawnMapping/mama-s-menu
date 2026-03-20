@@ -14,6 +14,7 @@ export interface Recipe {
   protein_g: number | null;
   carbs_g: number | null;
   fat_g: number | null;
+  fibre_g: number | null;
   prep_time_min: number | null;
   cook_time_min: number | null;
 }
