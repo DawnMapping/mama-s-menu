@@ -191,7 +191,10 @@ export function RecipeDetail({ recipe, open, onClose, preselectedDay }: RecipeDe
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
         <DialogContent
           ref={contentRef}
-          onOpenAutoFocus={() => contentRef.current?.scrollTo(0, 0)}
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            contentRef.current?.scrollTo(0, 0);
+          }}
           className="max-w-lg p-0 gap-0 overflow-hidden bg-card border-border/50 max-h-[90vh] overflow-y-auto"
         >
         {recipe.image_url ? (
