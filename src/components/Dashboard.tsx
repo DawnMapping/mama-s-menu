@@ -107,11 +107,12 @@ function WeeklyNutrition({ lockedMeals, profile }: {
         </span>
       </div>
 
-      <div className="flex justify-around">
+      <div className="flex justify-around flex-wrap gap-y-3">
         <MacroRing label="Protein" value={weeklyMacros.protein} target={weekPro} emoji="🏋️" />
         <MacroRing label="Calories" value={weeklyMacros.calories} target={weekCal} emoji="🔥" />
         <MacroRing label="Carbs" value={weeklyMacros.carbs} target={weekCarb} />
         <MacroRing label="Fat" value={weeklyMacros.fat} target={weekFat} />
+        <MacroRing label="Fibre" value={weeklyMacros.fibre} target={weekFibre} emoji="🌾" />
       </div>
     </section>
   );

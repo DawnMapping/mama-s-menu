@@ -8,6 +8,7 @@ export interface Profile {
   daily_protein_g_target: number;
   daily_carbs_g_target: number;
   daily_fat_g_target: number;
+  daily_fibre_g_target: number;
   avatar_emoji: string;
   created_at: string;
 }
