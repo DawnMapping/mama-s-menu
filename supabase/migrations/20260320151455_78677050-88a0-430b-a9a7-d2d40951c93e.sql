@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN daily_fibre_g_target integer DEFAULT 30;

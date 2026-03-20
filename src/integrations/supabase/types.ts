@@ -124,6 +124,7 @@ export type Database = {
           daily_calories_target: number | null
           daily_carbs_g_target: number | null
           daily_fat_g_target: number | null
+          daily_fibre_g_target: number | null
           daily_protein_g_target: number | null
           id: string
           name: string
@@ -134,6 +135,7 @@ export type Database = {
           daily_calories_target?: number | null
           daily_carbs_g_target?: number | null
           daily_fat_g_target?: number | null
+          daily_fibre_g_target?: number | null
           daily_protein_g_target?: number | null
           id?: string
           name: string
@@ -144,6 +146,7 @@ export type Database = {
           daily_calories_target?: number | null
           daily_carbs_g_target?: number | null
           daily_fat_g_target?: number | null
+          daily_fibre_g_target?: number | null
           daily_protein_g_target?: number | null
           id?: string
           name?: string
